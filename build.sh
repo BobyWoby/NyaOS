@@ -1,6 +1,7 @@
+#!/bin/sh
+set -e
+. ./headers.sh
 
-if grub-file --is-x86-multiboot myos; then
-  echo multiboot confirmed
-else
-  echo the file is not multiboot
-fi
+for PROJECT in $PROJECTS; do
+  (cd $PROJECT && DESTDIR="$SYSROOT" $MAKE install)
+done
