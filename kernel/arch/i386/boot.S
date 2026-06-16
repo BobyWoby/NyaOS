@@ -26,8 +26,11 @@ stack_top:
 _start:
 	movl $stack_top, %esp
 
+    # might be worth having kernel_main_early for setting up heap, log and other core features
+
 	# Call the global constructors.
 	call _init
+
 
 	# Transfer control to the main kernel.
 	call kernel_main

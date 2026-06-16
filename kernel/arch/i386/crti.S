@@ -1,3 +1,4 @@
+# crti.S provides the header before any initialization occurs
 .section .init
 .global _init
 .type _init, @function

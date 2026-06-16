@@ -3,5 +3,5 @@
 
 void kernel_main(void) {
     terminal_initialize();
-    printf("UwU Hallo :3 Uwu\n");
+    printf("UwU Hallo %s Uwu\n", ":3");
 }
