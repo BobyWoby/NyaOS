@@ -1,3 +1,5 @@
+#include <stddef.h>
+#include <stdbool.h>
 #include <ctype.h>
 
 int isxdigit(int c){

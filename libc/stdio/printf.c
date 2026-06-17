@@ -2,6 +2,7 @@
 #include <limits.h>
 #include <stdarg.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -12,6 +13,19 @@ static bool print(const char* data, size_t length) {
         if (putchar(bytes[i]) == EOF) return false;
     }
     return true;
+}
+
+static int display_string(const char* str, size_t str_length, int* chars) {
+    if (print(str, str_length)) {
+        *chars += str_length;
+    }
+    // TODO: Add smt if the print fails
+}
+
+static int display_character(const char c, int* chars) {
+    if (putchar(c) == EOF) {
+        // TODO: add smt if putchar fails
+    }
 }
 
 char* __int_str(intmax_t i, char b[], int base, bool plusSignIfNeeded, bool spaceSignIfNeeded,
@@ -41,7 +55,7 @@ char* __int_str(intmax_t i, char b[], int base, bool plusSignIfNeeded, bool spac
     do {
         ++p;
         shifter = shifter / base;
-        length++;
+        (*length)++;
     } while (shifter);
 
     *p = '\0';
@@ -117,168 +131,358 @@ int vprintf(const char* format, va_list list) {
                         break;
                     case '0':
                         zeroPad = true;
+                        ++i;
                         break;
                     default:
                         extBreak = true;
                 }
                 if (extBreak) break;
             }
-        }
-
-        while (isdigit(format[i])) {
-            lengthSpec *= 10;
-            lengthSpec += format[i] - '0';
-            ++i;
-        }
-
-        if (format[i] == '*') {
-            lengthSpec = va_arg(list, int);
-            ++i;
-        }
-
-        if (format[i] == '.') {
-            ++i;
             while (isdigit(format[i])) {
-                precSpec *= 10;
-                precSpec += format[i] - '0';
+                lengthSpec *= 10;
+                lengthSpec += format[i] - '0';
                 ++i;
             }
+
             if (format[i] == '*') {
-                precSpec = va_arg(list, int);
+                lengthSpec = va_arg(list, int);
                 ++i;
             }
-        } else {
-            precSpec = 6;
-        }
 
-        if (format[i] == 'h' || format[i] == 'l' || format[i] == 'j' || format[i] == 'z' ||
-            format[i] == 't' || format[i] == 'L') {
-            length = format[i];
-            ++i;
-            if (format[i] == 'h') {
-                length = 'H';
-            } else if (format[i] == 'l') {
-                length = 'q';
+            if (format[i] == '.') {
                 ++i;
+                while (isdigit(format[i])) {
+                    precSpec *= 10;
+                    precSpec += format[i] - '0';
+                    ++i;
+                }
+                if (format[i] == '*') {
+                    precSpec = va_arg(list, int);
+                    ++i;
+                }
+            } else {
+                precSpec = 6;
             }
-        }
+            if (format[i] == 'h' || format[i] == 'l' || format[i] == 'j' || format[i] == 'z' ||
+                format[i] == 't' || format[i] == 'L') {
+                length = format[i];
+                ++i;
+                if (format[i] == 'h') {
+                    length = 'H';
+                } else if (format[i] == 'l') {
+                    length = 'q';
+                    ++i;
+                }
+            }
+            specifier = format[i];
 
-        specifier = format[i];
-        memset(intStrBuffer, 0, 256);
-        int base = 10;
-        if (specifier == 'o') {
-            base = 8;
-            specifier = 'u';
-            if (altForm) {
-                if (print("0", 1)) ++chars;
-                // TODO: Add smt if the print fails
-            }
-        }
-        if (specifier == 'p') {
-            base = 16;
-            length = 'z';
-            specifier = 'u';
-        }
-        switch (specifier) {
-            case 'X':
-                base = 16;
-            case 'x':
-                base = base == 10 ? 17 : base;
+            memset(intStrBuffer, 0, 256);
+
+            int base = 10;
+            if (specifier == 'o') {
+                base = 8;
+                specifier = 'u';
                 if (altForm) {
                     if (print("0", 1)) ++chars;
                     // TODO: Add smt if the print fails
                 }
-            case 'u': {
-                switch (length) {
-                    case 0: {
-                        unsigned int integer = va_arg(list, unsigned int);
-                        int str_length = 0;
-                        __int_str(integer, intStrBuffer, base, plusSign, spaceNoSign, lengthSpec,
-                                  leftJustify, zeroPad, &str_length);
-                        if (print(intStrBuffer, str_length)) {
-                            chars += str_length;
-                        }
-                        // TODO: Add smt if the print fails
-                        break;
-                    }
-                    case 'H': {
-                        int str_length = 0;
-                        unsigned char integer = (unsigned char)va_arg(list, unsigned int);
-                        __int_str(integer, intStrBuffer, base, plusSign, spaceNoSign, lengthSpec,
-                                  leftJustify, zeroPad, &str_length);
-                        if (print(intStrBuffer, str_length)) {
-                            chars += str_length;
-                        }
-                        // TODO: Add smt if the print fails
-                        break;
-                    }
-                }
             }
+            if (specifier == 'p') {
+                base = 16;
+                length = 'z';
+                specifier = 'u';
+            }
+            switch (specifier) {
+                case 'X':
+                    base = 16;
+                case 'x':
+                    base = base == 10 ? 17 : base;
+                    if (altForm) {
+                        display_string("0x", 2, &chars);
+                    }
+
+                case 'u': {
+                    switch (length) {
+                        case 0: {
+                            unsigned int integer = va_arg(list, unsigned int);
+                            int str_length;
+                            __int_str(integer, intStrBuffer, base, plusSign, spaceNoSign,
+                                      lengthSpec, leftJustify, zeroPad, &str_length);
+                            display_string(intStrBuffer, str_length, &chars);
+                            break;
+                        }
+                        case 'H': {
+                            unsigned char integer = (unsigned char)va_arg(list, unsigned int);
+                            int str_length;
+                            __int_str(integer, intStrBuffer, base, plusSign, spaceNoSign,
+                                      lengthSpec, leftJustify, zeroPad, &str_length);
+                            display_string(intStrBuffer, str_length, &chars);
+                            break;
+                        }
+                        case 'h': {
+                            unsigned short int integer = va_arg(list, unsigned int);
+                            int str_length;
+                            __int_str(integer, intStrBuffer, base, plusSign, spaceNoSign,
+                                      lengthSpec, leftJustify, zeroPad, &str_length);
+                            display_string(intStrBuffer, str_length, &chars);
+                            break;
+                        }
+                        case 'l': {
+                            unsigned long integer = va_arg(list, unsigned long);
+                            int str_length;
+                            __int_str(integer, intStrBuffer, base, plusSign, spaceNoSign,
+                                      lengthSpec, leftJustify, zeroPad, &str_length);
+                            display_string(intStrBuffer, str_length, &chars);
+                            break;
+                        }
+                        case 'q': {
+                            unsigned long long integer = va_arg(list, unsigned long long);
+                            int str_length;
+                            __int_str(integer, intStrBuffer, base, plusSign, spaceNoSign,
+                                      lengthSpec, leftJustify, zeroPad, &str_length);
+                            display_string(intStrBuffer, str_length, &chars);
+                            break;
+                        }
+                        case 'j': {
+                            uintmax_t integer = va_arg(list, uintmax_t);
+                            int str_length;
+                            __int_str(integer, intStrBuffer, base, plusSign, spaceNoSign,
+                                      lengthSpec, leftJustify, zeroPad, &str_length);
+                            display_string(intStrBuffer, str_length, &chars);
+                            break;
+                        }
+                        case 'z': {
+                            size_t integer = va_arg(list, size_t);
+                            int str_length;
+                            __int_str(integer, intStrBuffer, base, plusSign, spaceNoSign,
+                                      lengthSpec, leftJustify, zeroPad, &str_length);
+                            display_string(intStrBuffer, str_length, &chars);
+                            break;
+                        }
+                        case 't': {
+                            ptrdiff_t integer = va_arg(list, ptrdiff_t);
+                            int str_length;
+                            __int_str(integer, intStrBuffer, base, plusSign, spaceNoSign,
+                                      lengthSpec, leftJustify, zeroPad, &str_length);
+                            display_string(intStrBuffer, str_length, &chars);
+                            break;
+                        }
+                        default:
+                            break;
+                    }
+                    break;
+                }
+
+                case 'd':
+                case 'i': {
+                    switch (length) {
+                        case 0: {
+                            int integer = va_arg(list, int);
+                            int str_length;
+                            __int_str(integer, intStrBuffer, base, plusSign, spaceNoSign,
+                                      lengthSpec, leftJustify, zeroPad, &str_length);
+                            display_string(intStrBuffer, str_length, &chars);
+                            break;
+                        }
+                        case 'H': {
+                            signed char integer = (signed char)va_arg(list, int);
+                            int str_length;
+                            __int_str(integer, intStrBuffer, base, plusSign, spaceNoSign,
+                                      lengthSpec, leftJustify, zeroPad, &str_length);
+                            display_string(intStrBuffer, str_length, &chars);
+                            break;
+                        }
+                        case 'h': {
+                            short int integer = va_arg(list, int);
+                            int str_length;
+                            __int_str(integer, intStrBuffer, base, plusSign, spaceNoSign,
+                                      lengthSpec, leftJustify, zeroPad, &str_length);
+                            display_string(intStrBuffer, str_length, &chars);
+                            break;
+                        }
+                        case 'l': {
+                            long integer = va_arg(list, long);
+                            int str_length;
+                            __int_str(integer, intStrBuffer, base, plusSign, spaceNoSign,
+                                      lengthSpec, leftJustify, zeroPad, &str_length);
+                            display_string(intStrBuffer, str_length, &chars);
+                            break;
+                        }
+                        case 'q': {
+                            long long integer = va_arg(list, long long);
+                            int str_length;
+                            __int_str(integer, intStrBuffer, base, plusSign, spaceNoSign,
+                                      lengthSpec, leftJustify, zeroPad, &str_length);
+                            display_string(intStrBuffer, str_length, &chars);
+                            break;
+                        }
+                        case 'j': {
+                            intmax_t integer = va_arg(list, intmax_t);
+                            int str_length;
+                            __int_str(integer, intStrBuffer, base, plusSign, spaceNoSign,
+                                      lengthSpec, leftJustify, zeroPad, &str_length);
+                            display_string(intStrBuffer, str_length, &chars);
+                            break;
+                        }
+                        case 'z': {
+                            size_t integer = va_arg(list, size_t);
+                            int str_length;
+                            __int_str(integer, intStrBuffer, base, plusSign, spaceNoSign,
+                                      lengthSpec, leftJustify, zeroPad, &str_length);
+                            display_string(intStrBuffer, str_length, &chars);
+                            break;
+                        }
+                        case 't': {
+                            ptrdiff_t integer = va_arg(list, ptrdiff_t);
+                            int str_length;
+                            __int_str(integer, intStrBuffer, base, plusSign, spaceNoSign,
+                                      lengthSpec, leftJustify, zeroPad, &str_length);
+                            display_string(intStrBuffer, str_length, &chars);
+                            break;
+                        }
+                        default:
+                            break;
+                    }
+                    break;
+                }
+
+                case 'c': {
+                    if (length == 'l') {
+                        //TODO: this was originally wint_t
+                        display_character(va_arg(list, wchar_t), &chars);
+                    } else {
+                    display_character(va_arg(list, int), &chars);
+                    }
+
+                    // display_character(va_arg(list, int), &chars);
+                    break;
+                }
+
+                case 's': {
+                    char* str = va_arg(list, char*);
+                    display_string(str, strlen(str), &chars);
+                    break;
+                }
+
+                case 'n': {
+                    switch (length) {
+                        case 'H':
+                            *(va_arg(list, signed char*)) = chars;
+                            break;
+                        case 'h':
+                            *(va_arg(list, short int*)) = chars;
+                            break;
+
+                        case 0: {
+                            int* a = va_arg(list, int*);
+                            *a = chars;
+                            break;
+                        }
+
+                        case 'l':
+                            *(va_arg(list, long*)) = chars;
+                            break;
+                        case 'q':
+                            *(va_arg(list, long long*)) = chars;
+                            break;
+                        case 'j':
+                            *(va_arg(list, intmax_t*)) = chars;
+                            break;
+                        case 'z':
+                            *(va_arg(list, size_t*)) = chars;
+                            break;
+                        case 't':
+                            *(va_arg(list, ptrdiff_t*)) = chars;
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                }
+
+                case 'e':
+                case 'E':
+                    emode = true;
+
+                case 'f':
+                case 'F':
+                case 'g':
+                case 'G': {
+                    double floating = va_arg(list, double);
+
+                    while (emode && floating >= 10) {
+                        floating /= 10;
+                        ++expo;
+                    }
+
+                    int form = lengthSpec - precSpec - expo - (precSpec || altForm ? 1 : 0);
+                    if (emode) {
+                        form -= 4;  // 'e+00'
+                    }
+                    if (form < 0) {
+                        form = 0;
+                    }
+
+                    int str_length;
+                    __int_str(floating, intStrBuffer, base, plusSign, spaceNoSign, form,
+                              leftJustify, zeroPad, &str_length);
+
+                    display_string(intStrBuffer, str_length, &chars);
+
+                    floating -= (int)floating;
+
+                    for (int i = 0; i < precSpec; ++i) {
+                        floating *= 10;
+                    }
+                    intmax_t decPlaces = (intmax_t)(floating + 0.5);
+
+                    if (precSpec) {
+                        display_character('.', &chars);
+
+                        __int_str(decPlaces, intStrBuffer, 10, false, false, 0, false, false,
+                                  &str_length);
+                        intStrBuffer[precSpec] = 0;
+                        display_string(intStrBuffer, str_length, &chars);
+                    } else if (altForm) {
+                        display_character('.', &chars);
+                    }
+
+                    break;
+                }
+
+                case 'a':
+                case 'A':
+                    // ACK! Hexadecimal floating points...
+                    break;
+
+                default:
+                    break;
+            }
+            if (specifier == 'e') {
+                display_string("e+", 2, &chars);
+            } else if (specifier == 'E') {
+                display_string("E+", 2, &chars);
+            }
+
+            if (specifier == 'e' || specifier == 'E') {
+                int str_length;
+                __int_str(expo, intStrBuffer, 10, false, false, 2, false, true, &str_length);
+                display_string(intStrBuffer, str_length, &chars);
+            }
+        } else {
+            if (putchar(format[i]) == EOF) {
+                // TODO: DO SMT ABT THIS
+            }
+            chars++;
         }
     }
+    return chars;
 }
 
 int printf(const char* restrict format, ...) {
     va_list parameters;
     va_start(parameters, format);
-
-    int written = 0;
-
-    while (*format != '\0') {
-        size_t maxrem = INT_MAX - written;
-
-        if (format[0] != '%' || format[1] == '%') {
-            if (format[0] == '%') format++;
-            size_t amount = 1;
-            while (format[amount] && format[amount] != '%') amount++;
-            if (maxrem < amount) {
-                // TODO: Set errno to EOVERFLOW.
-                return -1;
-            }
-            if (!print(format, amount)) return -1;
-            format += amount;
-            written += amount;
-            continue;
-        }
-
-        const char* format_begun_at = format++;
-
-        if (*format == 'c') {
-            format++;
-            char c = (char)va_arg(parameters, int /* char promotes to int */);
-            if (!maxrem) {
-                // TODO: Set errno to EOVERFLOW.
-                return -1;
-            }
-            if (!print(&c, sizeof(c))) return -1;
-            written++;
-        } else if (*format == 's') {
-            format++;
-            const char* str = va_arg(parameters, const char*);
-            size_t len = strlen(str);
-            if (maxrem < len) {
-                // TODO: Set errno to EOVERFLOW.
-                return -1;
-            }
-            if (!print(str, len)) return -1;
-            written += len;
-        } else if (*format == 'd') {
-            format++;
-            const double num = va_arg(parameters, const double);
-        } else {
-            // TODO: add support for other flags, and only print unknown until space
-            format = format_begun_at;
-            size_t len = strlen(format);
-            if (maxrem < len) {
-                // TODO: Set errno to EOVERFLOW.
-                return -1;
-            }
-            if (!print(format, len)) return -1;
-            written += len;
-            format += len;
-        }
-    }
-
+    int written = vprintf(format, parameters);
     va_end(parameters);
     return written;
 }

@@ -29,6 +29,8 @@ LIBK_CPPFLAGS:=$(LIBK_CPPFLAGS) $(KERNEL_ARCH_CPPFLAGS)
 
 FREEOBJS=\
 $(ARCH_FREEOBJS) \
+ctype/isdigit.o\
+ctype/isxdigit.o\
 stdio/printf.o \
 stdio/putchar.o \
 stdio/puts.o \
@@ -38,6 +40,8 @@ string/memcpy.o \
 string/memmove.o \
 string/memset.o \
 string/strlen.o \
+string/strcat.o \
+string/strcpy.o \
 
 HOSTEDOBJS=\
 $(ARCH_HOSTEDOBJS) \
