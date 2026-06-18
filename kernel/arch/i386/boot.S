@@ -19,6 +19,7 @@ stack_bottom:
 .skip 16384 # 16 KiB
 stack_top:
 
+
 # The kernel entry point.
 .section .text
 .global _start
@@ -26,17 +27,12 @@ stack_top:
 _start:
 	movl $stack_top, %esp
 
+    # setup GDT here
+
     # might be worth having kernel_main_early for setting up heap, log and other core features
 
 	# Call the global constructors.
 	call _init
-
-    # disable interrupts
-    cli
-
-    call _main
-
-    sti
 
 
 	# Transfer control to the main kernel.
@@ -47,3 +43,21 @@ _start:
 1:	hlt
 	jmp 1b
 .size _start, . - _start
+
+
+# Global Descriptor Table
+.global gdt_flush
+.extern gp
+gdt_flush:
+	# Load the GDT
+	lgdt [gp]
+	# Flush the values to 0x10
+	mov ax, 0x10
+	mov ds, ax
+	mov es, ax
+	mov fs, ax
+	mov gs, ax
+	mov ss, ax
+	jmp 0x08:flush2
+flush2:
+	ret
