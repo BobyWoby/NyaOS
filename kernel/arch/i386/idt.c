@@ -1,8 +1,6 @@
-#include <kernel/tty.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
 
 typedef struct {
   uint16_t isr_low;
@@ -16,10 +14,3 @@ typedef struct {
   uint32_t isr_high; // The higher 32 bits of the ISR's address
   uint32_t reserved; // Set to zero
 } __attribute__((packed)) idt_entry_t;
-
-__attribute__((aligned(0x10))) static idt_entry_t idt[256];
-
-void kernel_main(void) {
-  terminal_initialize();
-  printf("UwU Hallo %s Uwu\n", ":3");
-}
