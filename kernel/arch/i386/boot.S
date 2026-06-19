@@ -46,7 +46,7 @@ _start:
 
 
 
-# For the segment selector: 
+# For the segment selector:
 # bits 0-1: Requested Privelige Level
 # bit 2: Table Index: 0 = GDT, 1 = LDT
 # bits 3-15: Index of the GDT/LDT to use
@@ -72,3 +72,27 @@ flush_tss:
     mov    $((5 * 8) | 0), %ax
     ltr     %ax
     ret
+
+
+.text
+.globl loadPageDirectory
+loadPageDirectory:
+push %ebp
+mov %esp, %ebp
+mov 8(%esp), %eax
+mov %eax, %cr3
+mov %ebp, %esp
+pop %ebp
+ret
+
+.text
+.globl enablePaging
+enablePaging:
+push %ebp
+mov %esp, %ebp
+mov %cr0, %eax
+or $0x80000000, %eax
+mov %eax, %cr0
+mov %ebp, %esp
+pop %ebp
+ret

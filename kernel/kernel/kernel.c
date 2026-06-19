@@ -7,6 +7,8 @@
 
 void kernel_main(void) {
     gdt_init();
+    paging_init();
+
     terminal_initialize();
     printf("UwU Hallo %s Uwu\n", ":3");
 }
