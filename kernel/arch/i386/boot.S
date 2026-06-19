@@ -46,6 +46,10 @@ _start:
 
 
 
+# For the segment selector: 
+# bits 0-1: Requested Privelige Level
+# bit 2: Table Index: 0 = GDT, 1 = LDT
+# bits 3-15: Index of the GDT/LDT to use
 .global flush_gdt
 flush_gdt:
     movl    4(%esp), %eax
@@ -53,7 +57,7 @@ flush_gdt:
     ljmp     $0x08, $.reload_CS
 
 .reload_CS:
-    mov     $0x10, %ax
+    mov     $0x18, %ax
     mov     %ax, %ds
     mov     %ax, %es
     mov     %ax, %fs

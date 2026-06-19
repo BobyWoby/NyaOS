@@ -97,17 +97,23 @@ void gdt_init(){
     // null descriptor
     encodeGDTEntry(0, 0, 0, 0, 0);
 
-    // kernel mode code segment
+    // 32-bit kernel mode code segment 
     encodeGDTEntry(1, 0, 0xfffff, 0x9a, 0xc);
 
+    // 64-bit kernel mode code segment 
+    encodeGDTEntry(2, 0, 0xfffff, 0x9a, 0xa);
+
     // kernel mode data segment
-    encodeGDTEntry(2, 0, 0xfffff, 0x92, 0xc);
+    encodeGDTEntry(3, 0, 0xfffff, 0x92, 0xc);
 
-    // user mode data segment
-    encodeGDTEntry(3, 0, 0xfffff, 0xf2, 0xc);
+    // 64-bit kernel mode data segment
+    encodeGDTEntry(4, 0, 0xfffff, 0x92, 0xc);
 
-    // user mode code segment
-    encodeGDTEntry(4, 0, 0xfffff, 0xfa, 0xc); 
+    // 64-bit user mode data segment
+    encodeGDTEntry(5, 0, 0xfffff, 0xf2, 0xc);
+
+    // 64-bit user mode code segment
+    encodeGDTEntry(6, 0, 0xfffff, 0xfa, 0xa); 
 
     // TODO: Task state segment
     write_tss();
