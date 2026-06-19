@@ -1,4 +1,6 @@
 #include <stdint.h>
+#include <string.h>
+#include <kernel/system.h>
 
 // why tf is it organized this way i have no idea
 typedef struct gdt_entry {
@@ -51,12 +53,16 @@ typedef struct {
 
 
 typedef struct {
-    uint8_t limit;
+    uint16_t limit;
     uint32_t base;
 }__attribute__((packed)) gdt_ptr_t;
 
 gdt_entry_t gdt[6];
 gdt_ptr_t gp;
+tss_entry_t tss_entry;
+
+extern void flush_tss(void);
+extern void flush_gdt(gdt_ptr_t *);
 
 void encodeGDTEntry(int i, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags){
     if(limit > 0xfffff) {
@@ -70,7 +76,18 @@ void encodeGDTEntry(int i, uint32_t base, uint32_t limit, uint8_t access, uint8_
     gdt[i].flags = (limit >> 16) & 0x0f;
 
     gdt[i].access_byte = access;
-    gdt[i].flags |= flags;
+    gdt[i].flags |= flags << 4;
+}
+
+void write_tss(){
+    uint32_t base = (uint32_t) &tss_entry;
+    uint32_t limit = sizeof(tss_entry) - 1;
+
+    encodeGDTEntry(5, base, limit, 0x89, 0x0);
+
+    memset(&tss_entry, 0, sizeof(tss_entry));
+    tss_entry.ssp0 = 0x10;
+    // tss_entry.esp0 = 0x0;
 }
 
 void gdt_init(){
@@ -81,17 +98,25 @@ void gdt_init(){
     encodeGDTEntry(0, 0, 0, 0, 0);
 
     // kernel mode code segment
-    encodeGDTEntry(1, 0, 0xfffff, 0x9a, 0xa);
+    encodeGDTEntry(1, 0, 0xfffff, 0x9a, 0xc);
 
     // kernel mode data segment
     encodeGDTEntry(2, 0, 0xfffff, 0x92, 0xc);
 
     // user mode data segment
-    encodeGDTEntry(3, 0, 0xfffff, 0xfa, 0xc);
+    encodeGDTEntry(3, 0, 0xfffff, 0xf2, 0xc);
 
     // user mode code segment
-    encodeGDTEntry(4, 0, 0xfffff, 0xf2, 0xc); 
+    encodeGDTEntry(4, 0, 0xfffff, 0xfa, 0xc); 
 
     // TODO: Task state segment
-    encodeGDTEntry(5, 0, 0xfffff, 0x89, 0x0); 
+    write_tss();
+
+    flush_gdt(&gp);
+
+    flush_tss();
+}
+
+void set_kernel_stack(uintptr_t stack){
+    tss_entry.esp0 = stack;
 }

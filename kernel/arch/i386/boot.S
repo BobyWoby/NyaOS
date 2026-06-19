@@ -45,19 +45,26 @@ _start:
 .size _start, . - _start
 
 
-# Global Descriptor Table
-.global gdt_flush
-.extern gp
-gdt_flush:
-	# Load the GDT
-	lgdt [gp]
-	# Flush the values to 0x10
-	mov ax, 0x10
-	mov ds, ax
-	mov es, ax
-	mov fs, ax
-	mov gs, ax
-	mov ss, ax
-	jmp 0x08:flush2
-flush2:
-	ret
+
+.global flush_gdt
+flush_gdt:
+    movl    4(%esp), %eax
+    lgdt    (%eax)
+    ljmp     $0x08, $.reload_CS
+
+.reload_CS:
+    mov     $0x10, %ax
+    mov     %ax, %ds
+    mov     %ax, %es
+    mov     %ax, %fs
+    mov     %ax, %gs
+    mov     %ax, %ss
+    ret
+
+
+
+.global flush_tss
+flush_tss:
+    mov    $((5 * 8) | 0), %ax
+    ltr     %ax
+    ret
