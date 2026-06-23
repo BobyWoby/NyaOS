@@ -45,13 +45,12 @@ _start:
 .size _start, . - _start
 
 
-; // returns amount (in KB) of available RAM below 1MB (usually below 640KB)
-; .global mem_lower
-; mem_lower:
-;     clc
-;     int $0x12
-;     jc .error
-;     ret
+.global enter_pmode
+enter_pmode:
+    cli				; clear interrupts
+	mov	%cr0, %eax,		; set bit 0 in cr0--enter pmode
+	or	$1, %eax
+	mov	%eax, %cr0
 
 
 
@@ -113,7 +112,7 @@ ret
 #   uint32_t type; // 1 = usable RAM, else => reserved
 #   uint32_t acpi; // ACPI 3.x
 # } __attribute__((packed)); nneds to be 24 bytes
-# 
+#
 
 # uint16_t detect_e820(struct e820_entry *buffer, uint16_t max_entries);
 #   buffer       : near pointer (offset within DS) to the entry array

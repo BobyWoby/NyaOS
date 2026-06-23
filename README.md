@@ -3,11 +3,10 @@
 ## TODO
 
 - [x] adding integer printing to printf
-- [ ] outputting to serial port
 - [ ] interrupt/exception handling
-- [ ] global descriptor table
-- [ ] memory mapping
-- [ ] the HEAP
+- [ ] Page frame allocator
+- [x] global descriptor table
+- [ ] virtual memory mapping & the HEAP
 
 ## Further out goals (in no particular order)
 
@@ -17,3 +16,4 @@
 - graphics?
 - filesystem (ZFS?)
 - multithreading
+- Keyboard driver
