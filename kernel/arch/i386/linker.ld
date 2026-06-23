@@ -36,6 +36,8 @@ SECTIONS
 	{
 		*(COMMON)
 		*(.bss)
+        ebss = .;
+        endkernel = .;
 	}
 
 	/* The compiler may produce other sections, put them in the proper place in
