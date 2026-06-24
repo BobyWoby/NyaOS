@@ -20,4 +20,5 @@ static void pfa_init(uint32_t mem_high) {
     bitmap = (uint32_t *)addr;
 }
 
+// return physical address of the frame
 static pageframe_t kalloc_frame_int() {}
