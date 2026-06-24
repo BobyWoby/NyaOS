@@ -2,10 +2,11 @@
 #define __PFA_H
 #include <stddef.h>
 #include <stdint.h>
+#include <kernel/multiboot.h>
 
-typedef unsigned int *pageframe_t;
+typedef uint32_t *pageframe_t;
 
-void pfa_init(uint32_t mem_high);
+void pfa_init(multiboot_info_t* mbd);
 pageframe_t kalloc_frame_int();
 pageframe_t kalloc_frame();
 void kfree_frame();
