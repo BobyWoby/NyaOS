@@ -28,33 +28,42 @@ unsigned int mem_high(multiboot_info_t *mbd) {
   for (int i = 0; i < mbd->mmap_length; i += sizeof(multiboot_memory_map_t)) {
     multiboot_memory_map_t *mmmt =
         (multiboot_memory_map_t *)(mbd->mmap_addr + i);
-    // printf("Start Addr: %x | Length: %x | Size: %x | Type: %d\n", mmmt->addr,
-    //        mmmt->len, mmmt->size, mmmt->type);
     if (mmmt->type == MULTIBOOT_MEMORY_AVAILABLE) {
-      /*
-       * Do something with this memory block!
-       * BE WARNED that some of memory shown as availiable is actually
-       * actively being used by the kernel! You'll need to take that
-       * into account before writing to memory!
-       */
       if (mmmt->addr + mmmt->len > high) {
-        high = mmmt->addr + mmmt->le;
+        high = mmmt->addr + mmmt->len;
+      }
+    }
+  }
+  return high;
+}
+
+void free_available_memory(multiboot_info_t *mbd) {
+  for (int i = 0; i < mbd->mmap_length; i += sizeof(multiboot_memory_map_t)) {
+    multiboot_memory_map_t *mmmt =
+        (multiboot_memory_map_t *)(mbd->mmap_addr + i);
+    if (mmmt->type == MULTIBOOT_MEMORY_AVAILABLE) {
+      int pages = mmmt->len / PAGE_SIZE;
+      int start_idx = mmmt->addr >> 5;
+
+      for (int i = 0; i < pages; ++i) {
+        unsigned int mask = (mmmt->addr);
+        bitmap[start_idx + i] &= mask;
       }
     }
   }
 }
 
 void pfa_init(multiboot_info_t *mbd) {
-  npages = mem_high / PAGE_SIZE;
+  npages = mem_high(mbd) / PAGE_SIZE;
 
   // grab the next page aligned memory address after endkernel
   uintptr_t addr = ((uintptr_t)&endkernel + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
   bitmap = (uint32_t *)addr;
 
   uint32_t bitmap_size = ((npages + 31) / 32) * sizeof(uint32_t);
-  // set all the pages to be free
+  // set all the pages to be used by default
   for (int i = 0; i < ((npages + 31) >> 5); ++i) {
-    bitmap[i] = 0;
+    bitmap[i] = 0xffffffff;
   }
 
   // mark everything up to end-of-bitmap as used
