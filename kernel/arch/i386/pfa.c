@@ -18,7 +18,8 @@ static pageframe_t kalloc_frame_int(){
         if(++i == NUM_PAGES){
             return (ERROR);
         }
-
     }
+    frame_map[i] = USED;
+    // return (startframe + (i * 0x1000));
 }
 
