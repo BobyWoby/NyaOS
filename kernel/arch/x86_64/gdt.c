@@ -87,7 +87,6 @@ void write_tss(){
 
     memset(&tss_entry, 0, sizeof(tss_entry));
     tss_entry.ssp0 = 0x10;
-    // tss_entry.esp0 = 0x0;
 }
 
 void gdt_init(){
@@ -123,6 +122,3 @@ void gdt_init(){
     flush_tss();
 }
 
-void set_kernel_stack(uintptr_t stack){
-    tss_entry.esp0 = stack;
-}

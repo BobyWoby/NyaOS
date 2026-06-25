@@ -31,10 +31,10 @@ FREEOBJS=\
 $(ARCH_FREEOBJS) \
 ctype/isdigit.o\
 ctype/isxdigit.o\
-stdio/printf.o \
-stdio/putchar.o \
-stdio/puts.o \
-stdlib/abort.o \
+# stdio/printf.o \
+# stdio/putchar.o \
+# stdio/puts.o \
+# stdlib/abort.o \
 string/memcmp.o \
 string/memcpy.o \
 string/memmove.o \
