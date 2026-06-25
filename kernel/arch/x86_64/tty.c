@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "vga.h"
@@ -16,14 +17,16 @@ static size_t terminal_row;
 static size_t terminal_column;
 static uint8_t terminal_color;
 static uint16_t* terminal_buffer;
-static struct limine_file *font_file;
-
+static struct limine_file* font_file;
+static PSF_font *font_header;
 
 __attribute__((used, section(".limine_requests"))) static volatile struct limine_framebuffer_request
     framebuffer_request = {.id = LIMINE_FRAMEBUFFER_REQUEST_ID, .revision = 0};
 
-__attribute__((used, section(".limine_requests"))) static volatile struct limine_module_request
-    module_request = {.id = LIMINE_MODULE_REQUEST_ID, .revision = 0};
+__attribute__((
+    used,
+    section(".limine_requests"))) static volatile struct limine_module_request module_request = {
+    .id = LIMINE_MODULE_REQUEST_ID, .revision = 0};
 
 void putpixel(struct limine_framebuffer* framebuffer, color_t c, unsigned int x, unsigned int y) {
     volatile uint32_t* fb_ptr = framebuffer->address;
@@ -31,28 +34,36 @@ void putpixel(struct limine_framebuffer* framebuffer, color_t c, unsigned int x,
     fb_ptr[idx] = (c.r << 16) | (c.g << 8) | (c.b);
 }
 
-void fillrect(struct limine_framebuffer* framebuffer, color_t c, uint32_t x, uint32_t y,
-        uint32_t w, uint32_t h)
-{
-
+void fillrect(struct limine_framebuffer* framebuffer, color_t c, uint32_t x, uint32_t y, uint32_t w,
+              uint32_t h) {
     uint32_t color = (c.r << 16) | (c.g << 8) | (c.b);
     volatile uint32_t* fb_ptr = framebuffer->address;
-    for(int i = y; i < y + h; ++i){
-        for(int j = x; j < x + w; ++j){
+    for (int i = y; i < y + h; ++i) {
+        for (int j = x; j < x + w; ++j) {
             fb_ptr[j] = color;
         }
         fb_ptr += framebuffer->pitch / 4;
     }
 }
 
-void draw_char(struct limine_framebuffer* fb, uint8_t *font, char c, int x, int y, color_t color){
-    uint8_t *char_bm = &font[(unsigned char)c * 16];
+void psf_init() { font_header = (PSF_font*)font_file->address; }
 
-    for(int row = 0; row < 16; ++row){
-        uint8_t byte = char_bm[row];
-        for(int col = 0; col < 8; ++col){
-            if(byte & (0x80 >> col)){
-                putpixel(fb, color, x + col, y + row);
+void draw_char(struct limine_framebuffer* fb,unsigned char c, int x, int y, color_t color) {
+    unsigned char* glyph = (unsigned char*)font_file->address + font_header->headersize +
+                           (c > 0 && c < font_header->numglyph ? c : 0) * font_header->bytesperglyph;
+
+    uint32_t bytesPerGlyphLine = (font_header->width + 7) / 8;
+    for (int i = 0; i < font_header->height; ++i) {
+        unsigned char* currentByte = glyph + (bytesPerGlyphLine * i);
+        uint8_t mask = 1 << 7;
+        for (int j = 0; j < font_header->width; ++j) {
+            if (*currentByte & mask) {
+                putpixel(fb, color, x + j, y + i);
+            }
+            mask >>= 1;
+            if (mask == 0) {
+                mask = 1 << 7;
+                currentByte += 1;
             }
         }
     }
@@ -69,6 +80,8 @@ void terminal_initialize(void) {
     struct limine_framebuffer* framebuffer = framebuffer_request.response->framebuffers[0];
     font_file = module_request.response->modules[0];
 
+    psf_init();
+
     volatile uint32_t* fb_ptr = framebuffer->address;
     for (size_t y = 0; y < framebuffer->height; y++) {
         for (size_t x = 0; x < framebuffer->width; x++) {
@@ -79,9 +92,17 @@ void terminal_initialize(void) {
             // fb_ptr[y * (framebuffer->pitch / 4) + x] = (nY << 8) | nX;
         }
     }
-    uint8_t *font_data = (uint8_t*) font_file->address;
     color_t c = {255, 255, 255};
-    draw_char(framebuffer, font_data, 'A', 50, 50, c);
+    int cx = 0, cy = 0;
+    draw_char(framebuffer, 'H', cx, cy, c);
+    cx += 8;
+    draw_char(framebuffer, 'e', cx, cy, c);
+    cx += 8;
+    draw_char(framebuffer, 'l', cx, cy, c);
+    cx += 8;
+    draw_char(framebuffer, 'l', cx, cy, c);
+    cx += 8;
+    draw_char(framebuffer, 'o', cx, cy, c);
     // fillrect(framebuffer, c , 0, 0, 200, 200);
 }
 
