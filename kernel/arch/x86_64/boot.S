@@ -14,51 +14,64 @@
 # bits 0-1: Requested Privilege Level
 # bit 2: Table Index: 0 = GDT, 1 = LDT
 # bits 3-15: Index of the GDT/LDT to use
-.text
-.global flush_gdt
-flush_gdt:
-    movl    4(%esp), %eax
-    lgdt    (%eax)
-    ljmp     $0x08, $.reload_CS
+# .text
+# .global flush_gdt
+# flush_gdt:
+#     movl    4(%esp), %eax
+#     lgdt    (%eax)
+#     ljmp     $0x08, $.reload_CS
+#
+# .reload_CS:
+#     mov     $0x18, %ax
+#     mov     %ax, %ds
+#     mov     %ax, %es
+#     mov     %ax, %fs
+#     mov     %ax, %gs
+#     mov     %ax, %ss
+#     ret
 
-.reload_CS:
-    mov     $0x18, %ax
-    mov     %ax, %ds
-    mov     %ax, %es
-    mov     %ax, %fs
-    mov     %ax, %gs
-    mov     %ax, %ss
+
+
+# .global flush_tss
+# flush_tss:
+#     mov    $((5 * 8) | 0), %ax
+#     ltr     %ax
+#     ret
+
+.global enable_sse
+enable_sse:
+    # now enable SSE and the like
+    mov %cr0, %rax
+    and $0xFFFFFFFFFFFFFFFB, %rax   # clear coprocessor emulation CR0.EM (bit 2)
+    or  $0x2, %rax                  # set coprocessor monitoring  CR0.MP (bit 1)
+    mov %rax, %cr0
+    mov %cr4, %rax
+    or  $(3 << 9), %rax             # set CR4.OSFXSR and CR4.OSXMMEXCPT
+    mov %rax, %cr4
     ret
 
 
 
-.global flush_tss
-flush_tss:
-    mov    $((5 * 8) | 0), %ax
-    ltr     %ax
-    ret
-
-
-
-.globl loadPageDirectory
-loadPageDirectory:
-    push %ebp
-    mov %esp, %ebp
-    mov 8(%esp), %eax
-    mov %eax, %cr3
-    mov %ebp, %esp
-    pop %ebp
-    ret
-
-
-
-.globl enablePaging
-enablePaging:
-    push %ebp
-    mov %esp, %ebp
-    mov %cr0, %eax
-    or $0x80000000, %eax
-    mov %eax, %cr0
-    mov %ebp, %esp
-    pop %ebp
-    ret
+#
+# .globl loadPageDirectory
+# loadPageDirectory:
+#     push %ebp
+#     mov %esp, %ebp
+#     mov 8(%esp), %eax
+#     mov %eax, %cr3
+#     mov %ebp, %esp
+#     pop %ebp
+#     ret
+#
+#
+#
+# .globl enablePaging
+# enablePaging:
+#     push %ebp
+#     mov %esp, %ebp
+#     mov %cr0, %eax
+#     or $0x80000000, %eax
+#     mov %eax, %cr0
+#     mov %ebp, %esp
+#     pop %ebp
+#     ret

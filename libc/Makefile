@@ -38,10 +38,10 @@ string/memset.o \
 string/strlen.o \
 string/strcat.o \
 string/strcpy.o \
-# stdio/printf.o \
-# stdio/putchar.o \
-# stdio/puts.o \
-# stdlib/abort.o \
+stdio/printf.o \
+stdio/putchar.o \
+stdio/puts.o \
+stdlib/abort.o \
 
 HOSTEDOBJS=\
 $(ARCH_HOSTEDOBJS) \

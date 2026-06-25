@@ -11,7 +11,6 @@
 __attribute__((used, section(".limine_requests"))) static volatile uint64_t limine_base_revision[] =
     LIMINE_BASE_REVISION(6);
 
-
 __attribute__((
     used,
     section(".limine_requests_start"))) static volatile uint64_t limine_requests_start_marker[] =
@@ -21,11 +20,14 @@ __attribute__((
     used, section(".limine_requests_end"))) static volatile uint64_t limine_requests_end_marker[] =
     LIMINE_REQUESTS_END_MARKER;
 
+extern void enable_sse();
 
 void kernel_main() {
     if (LIMINE_BASE_REVISION_SUPPORTED(limine_base_revision) == false) {
         hcf();
     }
+
+    enable_sse();
 
     terminal_initialize();
 
@@ -34,6 +36,6 @@ void kernel_main() {
     // pfa_init();
     // paging_init();
     //
-    // printf("UwU Hallo %s Uwu\n", ":3");
+    printf("UwU Hallo %s Uwu\n", ":3");
     hcf();
 }
