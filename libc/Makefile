@@ -31,10 +31,6 @@ FREEOBJS=\
 $(ARCH_FREEOBJS) \
 ctype/isdigit.o\
 ctype/isxdigit.o\
-# stdio/printf.o \
-# stdio/putchar.o \
-# stdio/puts.o \
-# stdlib/abort.o \
 string/memcmp.o \
 string/memcpy.o \
 string/memmove.o \
@@ -42,6 +38,10 @@ string/memset.o \
 string/strlen.o \
 string/strcat.o \
 string/strcpy.o \
+# stdio/printf.o \
+# stdio/putchar.o \
+# stdio/puts.o \
+# stdlib/abort.o \
 
 HOSTEDOBJS=\
 $(ARCH_HOSTEDOBJS) \

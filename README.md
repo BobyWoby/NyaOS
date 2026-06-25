@@ -1,4 +1,5 @@
 # NyaOS - :3 (WIP)
+Text rendering is currently assuming that the pixel format is 0x00RRGGBB
 
 ## TODO
 

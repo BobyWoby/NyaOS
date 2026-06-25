@@ -6,7 +6,8 @@ set -e
 mkdir -p sysroot
 
 # build.sh (make install) has already placed the kernel at
-# sysroot/boot/nyaos.kernel; just lay down the Limine boot files alongside it.
+# sysroot/boot/nyaos.kernel; lay down the module and Limine boot files alongside it.
+cp -v minecraft.bin sysroot/boot/minecraft.bin
 mkdir -p sysroot/boot/limine
 cp -v limine.conf limine-binary/limine-bios.sys limine-binary/limine-bios-cd.bin \
       limine-binary/limine-uefi-cd.bin sysroot/boot/limine/
