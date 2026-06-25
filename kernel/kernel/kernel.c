@@ -36,6 +36,6 @@ void kernel_main() {
     // pfa_init();
     // paging_init();
     //
-    printf("UwU Hallo %s Uwu\n", ":3");
+    printf("UwU Hallo %sUwu\nHow are you?", ":3");
     hcf();
 }

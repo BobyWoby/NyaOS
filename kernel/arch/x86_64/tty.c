@@ -111,16 +111,17 @@ void terminal_putchar(char c) {
     // TODO: parse other escape characters?
     if (uc == '\n') {
         terminal_column = 0;
-        if (++terminal_row == fb->height) terminal_row = 0;
+        if (++terminal_row == fb->height / (font_header->height * font_size)) terminal_row = 0;
+        return;
     }
 
     draw_char(uc, terminal_column * font_header->width * font_size,
               terminal_row * font_header->height * font_size, terminal_fg, font_size);
     // terminal_putentryat(uc, terminal_column, terminal_row);
 
-    if (++terminal_column == VGA_WIDTH) {
+    if (++terminal_column == fb->width / (font_header->width * font_size)) {
         terminal_column = 0;
-        if (++terminal_row == VGA_HEIGHT) terminal_row = 0;
+        if (++terminal_row == fb->height / (font_header->height * font_size)) terminal_row = 0;
     }
 }
 
