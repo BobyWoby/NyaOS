@@ -55,7 +55,7 @@ SECTIONS
     . = ALIGN(CONSTANT(MAXPAGESIZE));
 
 	/* Read-write data (initialized) */
-	.data : 
+	.data :
 	{
 		*(.data)
 	}
