@@ -30,7 +30,6 @@ typedef struct gdt_entry {
   // 4: Reserved
   uint8_t flags;
   uint8_t base_hi;
-  uint32_t base_last;
 } __attribute__((packed)) gdt_entry_t;
 
 typedef struct {
@@ -38,7 +37,7 @@ typedef struct {
   uint64_t base;
 } __attribute__((packed)) gdt_ptr_t;
 
-gdt_entry_t gdt[6];
+gdt_entry_t gdt[9];
 gdt_ptr_t gp;
 tss_entry_t tss_entry;
 
@@ -59,22 +58,24 @@ void encodeGDTEntry(int i, uint64_t base, uint32_t limit, uint8_t access,
 
   gdt[i].access_byte = access;
   gdt[i].flags |= flags << 4;
-  gdt[i].base_last = (base >> 32);
 }
 
 void write_tss(int idx) {
-  uint32_t base = (uint32_t)&tss_entry;
+  uint64_t base = (uint64_t)&tss_entry;
   uint32_t limit = sizeof(tss_entry) - 1;
 
   encodeGDTEntry(idx, base, limit, 0x89, 0x0);
+  gdt[idx + 1].base_lo = (base >> 32) & 0xffff;
+  gdt[idx + 1].limit_lo = (base >> 48) & 0xffff;
 
+  // gdt[i].base_last = (base >> 32);
   memset(&tss_entry, 0, sizeof(tss_entry));
   // tss_entry.ssp0 = 0x10;
 }
 
 void gdt_init() {
   gp.limit = sizeof(gdt) - 1;
-  gp.base = (uint32_t)&gdt;
+  gp.base = (uint64_t)&gdt;
 
   // null descriptor
   encodeGDTEntry(0, 0, 0, 0, 0);
@@ -88,10 +89,10 @@ void gdt_init() {
   // kernel mode data segment
   encodeGDTEntry(3, 0, 0xfffff, 0x92, 0xc);
 
-  // 64-bit kernel mode data segment
-  encodeGDTEntry(4, 0, 0xfffff, 0x92, 0xc);
+  // user mode data segment
+  encodeGDTEntry(4, 0, 0xfffff, 0xfa, 0xa);
 
-  // 64-bit user mode data segment
+  // 32-bit user mode code segment
   encodeGDTEntry(5, 0, 0xfffff, 0xf2, 0xc);
 
   // 64-bit user mode code segment

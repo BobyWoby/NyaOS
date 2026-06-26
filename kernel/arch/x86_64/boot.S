@@ -18,13 +18,14 @@
 .global flush_gdt
 flush_gdt:
     lgdt    (%rdi)
-    push    0b10000                 # Push code segment to stack
+    # Push code segment to stack
+    push    $(2 * 8 | 0)
 
     leaq .reload_cs(%rip), %rax  # Load address of .reload_CS into RAX
     push %rax                  # Push this value to the stack
     lretfq                     # Perform a far return, RETFQ or LRETQ depending on syntax
 .reload_CS:
-    mov     $0b11000, %ax
+    mov     $(3 * 8 | 0), %ax
     mov     %ax, %ds
     mov     %ax, %es
     mov     %ax, %fs
@@ -54,19 +55,12 @@ enable_sse:
 
 
 
-#
-# .globl loadPageDirectory
-# loadPageDirectory:
-#     push %ebp
-#     mov %esp, %ebp
-#     mov 8(%esp), %eax
-#     mov %eax, %cr3
-#     mov %ebp, %esp
-#     pop %ebp
-#     ret
-#
-#
-#
+
+.globl loadPageDirectory
+loadPageDirectory:
+    mov %rdi, %cr3
+    ret
+
 # .globl enablePaging
 # enablePaging:
 #     push %ebp

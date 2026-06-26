@@ -2,10 +2,9 @@
 #include <kernel/system.h>
 #include <stdint.h>
 
-extern void loadPageDirectory(uint32_t *);
-extern void enablePaging();
-uint32_t *page_directory;
-uint32_t *first_page_table;
+extern void loadPageDirectory(uint64_t *);
+uint64_t *page_directory;
+uint64_t *first_page_table;
 
 void fill_first_page_table() {
   // holds physical address to start mapping pages to
@@ -39,5 +38,4 @@ void paging_init() {
   page_directory[0] = ((unsigned int)first_page_table) | 3;
 
   loadPageDirectory(page_directory);
-  enablePaging();
 }

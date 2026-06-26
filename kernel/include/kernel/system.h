@@ -24,6 +24,17 @@ typedef struct {
   uint8_t iopb;
 } tss_entry_t;
 
+typedef struct lm_sysseg_desc {
+  uint16_t limit_lo;
+  uint16_t base_lo;
+  uint8_t base_mid;
+  uint8_t access_byte;
+  uint8_t flags;
+  uint8_t base_hi;
+  uint32_t base_last;
+  uint32_t reserved;
+} lm_sysseg_desc_t;
+
 extern uint32_t *page_directory;
 extern uint32_t *first_page_table;
 
