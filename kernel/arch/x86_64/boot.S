@@ -15,28 +15,30 @@
 # bit 2: Table Index: 0 = GDT, 1 = LDT
 # bits 3-15: Index of the GDT/LDT to use
 # .text
-# .global flush_gdt
-# flush_gdt:
-#     movl    4(%esp), %eax
-#     lgdt    (%eax)
-#     ljmp     $0x08, $.reload_CS
-#
-# .reload_CS:
-#     mov     $0x18, %ax
-#     mov     %ax, %ds
-#     mov     %ax, %es
-#     mov     %ax, %fs
-#     mov     %ax, %gs
-#     mov     %ax, %ss
-#     ret
+.global flush_gdt
+flush_gdt:
+    lgdt    (%rdi)
+    push    0b10000                 # Push code segment to stack
+
+    leaq .reload_cs(%rip), %rax  # Load address of .reload_CS into RAX
+    push %rax                  # Push this value to the stack
+    lretfq                     # Perform a far return, RETFQ or LRETQ depending on syntax
+.reload_CS:
+    mov     $0b11000, %ax
+    mov     %ax, %ds
+    mov     %ax, %es
+    mov     %ax, %fs
+    mov     %ax, %gs
+    mov     %ax, %ss
+    ret
 
 
 
-# .global flush_tss
-# flush_tss:
-#     mov    $((5 * 8) | 0), %ax
-#     ltr     %ax
-#     ret
+.global flush_tss
+flush_tss:
+    mov     $(7 * 8 | 0), %ax
+    ltr     %ax
+    ret
 
 .global enable_sse
 enable_sse:
