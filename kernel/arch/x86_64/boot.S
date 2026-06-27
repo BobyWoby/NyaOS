@@ -23,8 +23,8 @@ flush_gdt:
 
     leaq .reload_cs(%rip), %rax  # Load address of .reload_CS into RAX
     push %rax                  # Push this value to the stack
-    lretfq                     # Perform a far return, RETFQ or LRETQ depending on syntax
-.reload_CS:
+    retfq                     # Perform a far return, RETFQ or LRETQ depending on syntax
+.reload_cs:
     mov     $(3 * 8 | 0), %ax
     mov     %ax, %ds
     mov     %ax, %es

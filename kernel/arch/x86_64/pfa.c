@@ -29,7 +29,7 @@ static inline int bm_test(uint32_t i) {
 pageframe_t pre_frames[20];
 
 uint64_t mem_high() {
-  struct limine_memmap_response *mmap = mmap_request->response;
+  struct limine_memmap_response *mmap = mmap_request.response;
   unsigned int high = 0;
   for (uint64_t i = 0; i < mmap->entry_count; ++i) {
     struct limine_memmap_entry *entry = mmap->entries[i];
@@ -43,7 +43,7 @@ uint64_t mem_high() {
 }
 
 void free_available_memory() {
-  struct limine_memmap_response *mmap = mmap_request->response;
+  struct limine_memmap_response *mmap = mmap_request.response;
   for (int i = 0; i < mmap->entry_count; i++) {
     struct limine_memmap_entry *entry = mmap->entries[i];
     if (entry->type == LIMINE_MEMMAP_USABLE) {
