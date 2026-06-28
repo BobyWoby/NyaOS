@@ -1,20 +1,3 @@
-# Low-level assembly helpers used by the arch code (GDT/TSS/paging).
-#
-# Limine enters the kernel directly at kernel_main (see linker.ld) in 64-bit
-# long mode with a stack and paging already set up, so there is no _start,
-# stack reservation, or crt _init chain here anymore.
-#
-# WARNING: the routines below are still written for 32-bit (cdecl stack args,
-# %esp, %cr0 paging-enable). They are not currently built into the kernel
-# (gdt.c/mem.c are not in make.config yet) and MUST be ported to the x86_64
-# SysV ABI (args in %rdi, 64-bit registers, etc.) before gdt_init() and
-# paging_init() are re-enabled.
-
-# For the segment selector:
-# bits 0-1: Requested Privilege Level
-# bit 2: Table Index: 0 = GDT, 1 = LDT
-# bits 3-15: Index of the GDT/LDT to use
-# .text
 .global flush_gdt
 flush_gdt:
     lgdt    (%rdi)
@@ -24,6 +7,7 @@ flush_gdt:
     leaq .reload_cs(%rip), %rax  # Load address of .reload_CS into RAX
     push %rax                  # Push this value to the stack
     retfq                     # Perform a far return, RETFQ or LRETQ depending on syntax
+
 .reload_cs:
     mov     $(3 * 8 | 0), %ax
     mov     %ax, %ds
@@ -33,6 +17,107 @@ flush_gdt:
     mov     %ax, %ss
     ret
 
+.extern exception_handler
+
+.macro isr_err_stub arg1
+isr_stub_\arg1:
+    push $\arg1
+    jmp isr_common
+.endm
+
+.macro isr_no_err_stub arg1
+isr_stub_\arg1:
+    push $0
+    push $\arg1
+    jmp isr_common
+.endm
+
+isr_common:
+    push %rax
+    push %rbx
+    push %rcx
+    push %rdx
+    push %rsi
+    push %rdi
+    push %rbp
+    push %r8
+    push %r9
+    push %r10
+    push %r11
+    push %r12
+    push %r13
+    push %r14
+    push %r15
+
+    mov %rsp, %rdi
+    call exception_handler
+
+    pop %r15
+    pop %r14
+    pop %r13
+    pop %r12
+    pop %r11
+    pop %r10
+    pop %r9
+    pop %r8
+    pop %rbp
+    pop %rdi
+    pop %rsi
+    pop %rdx
+    pop %rcx
+    pop %rbx
+    pop %rax
+    add $16, %rsp
+    iretq
+
+
+
+isr_no_err_stub 0
+isr_no_err_stub 1
+isr_no_err_stub 2
+isr_no_err_stub 3
+isr_no_err_stub 4
+isr_no_err_stub 5
+isr_no_err_stub 6
+isr_no_err_stub 7
+isr_err_stub    8
+isr_no_err_stub 9
+isr_err_stub    10
+isr_err_stub    11
+isr_err_stub    12
+isr_err_stub    13
+isr_err_stub    14
+isr_no_err_stub 15
+isr_no_err_stub 16
+isr_err_stub    17
+isr_no_err_stub 18
+isr_no_err_stub 19
+isr_no_err_stub 20
+isr_no_err_stub 21
+isr_no_err_stub 22
+isr_no_err_stub 23
+isr_no_err_stub 24
+isr_no_err_stub 25
+isr_no_err_stub 26
+isr_no_err_stub 27
+isr_no_err_stub 28
+isr_no_err_stub 29
+isr_err_stub    30
+isr_no_err_stub 31
+
+
+.altmacro
+.macro isr_entry num
+    .quad isr_stub_\num     # use .quad if targeting 64-bit
+.endm
+
+.global isr_stub_table
+isr_stub_table:
+.set i, 0
+.rept 32
+    isr_entry %i
+    .set i, i + 1
+.endr
 
 
 .global flush_tss
@@ -60,6 +145,7 @@ enable_sse:
 loadPageDirectory:
     mov %rdi, %cr3
     ret
+
 
 # .globl enablePaging
 # enablePaging:

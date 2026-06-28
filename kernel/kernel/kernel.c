@@ -2,6 +2,7 @@
 #include <kernel/limine.h>
 #include <kernel/pfa.h>
 #include <kernel/system.h>
+#include <kernel/idt.h>
 #include <kernel/tty.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -28,6 +29,9 @@ void kernel_main() {
     }
 
     enable_sse();
+    gdt_init();
+    idt_init();
+    pfa_init();
 
     terminal_initialize();
 
