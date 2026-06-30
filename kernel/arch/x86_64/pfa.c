@@ -58,12 +58,11 @@ void free_available_memory() {
 
 void pfa_init() {
   npages = mem_high() / PAGE_SIZE;
+  uint32_t bitmap_size = ((npages + 31) / 32) * sizeof(uint32_t);
 
-  // grab the next page aligned memory address after endkernel
   uintptr_t addr = ((uintptr_t)&endkernel + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
   bitmap = (uint32_t *)addr;
 
-  uint32_t bitmap_size = ((npages + 31) / 32) * sizeof(uint32_t);
   // set all the pages to be used by default
   for (int i = 0; i < ((npages + 31) >> 5); ++i) {
     bitmap[i] = 0xffffffff;

@@ -31,10 +31,6 @@ void kernel_main() {
     enable_sse();
     gdt_init();
     idt_init();
-    // hcf();
-
-    pfa_init();
-    hcf();
 
     terminal_initialize();
 
@@ -43,6 +39,8 @@ void kernel_main() {
     // pfa_init();
     // paging_init();
     //
+    // hcf();
     printf("UwU Hallo %sUwu\nHow are you?", ":3");
+    pfa_init();
     hcf();
 }

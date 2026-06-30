@@ -28,8 +28,8 @@ static int display_character(const char c, int* chars) {
     }
 }
 
-char* __int_str(intmax_t i, char b[], int base, bool plusSignIfNeeded, bool spaceSignIfNeeded,
-                int paddingNo, bool justify, bool zeroPad, int* length) {
+char* __int_str(uintmax_t i, char b[], int base, bool plusSignIfNeeded, bool spaceSignIfNeeded,
+                int paddingNo, bool justify, bool zeroPad, bool isNegative, int* length) {
     *length = 0;
     char digit[32] = {0};
     memset(digit, 0, 32);
@@ -42,16 +42,15 @@ char* __int_str(intmax_t i, char b[], int base, bool plusSignIfNeeded, bool spac
     }
 
     char* p = b;
-    if (i < 0) {
+    if (isNegative) {
         *p++ = '-';
-        i *= -1;
     } else if (plusSignIfNeeded) {
         *p++ = '+';
     } else if (spaceSignIfNeeded) {
         *p++ = ' ';
     }
 
-    intmax_t shifter = i;
+    uintmax_t shifter = i;
     do {
         ++p;
         shifter = shifter / base;
@@ -207,7 +206,7 @@ int vprintf(const char* format, va_list list) {
                             unsigned int integer = va_arg(list, unsigned int);
                             int str_length;
                             __int_str(integer, intStrBuffer, base, plusSign, spaceNoSign,
-                                      lengthSpec, leftJustify, zeroPad, &str_length);
+                                      lengthSpec, leftJustify, zeroPad, false, &str_length);
                             display_string(intStrBuffer, str_length, &chars);
                             break;
                         }
@@ -215,7 +214,7 @@ int vprintf(const char* format, va_list list) {
                             unsigned char integer = (unsigned char)va_arg(list, unsigned int);
                             int str_length;
                             __int_str(integer, intStrBuffer, base, plusSign, spaceNoSign,
-                                      lengthSpec, leftJustify, zeroPad, &str_length);
+                                      lengthSpec, leftJustify, zeroPad, false, &str_length);
                             display_string(intStrBuffer, str_length, &chars);
                             break;
                         }
@@ -223,7 +222,7 @@ int vprintf(const char* format, va_list list) {
                             unsigned short int integer = va_arg(list, unsigned int);
                             int str_length;
                             __int_str(integer, intStrBuffer, base, plusSign, spaceNoSign,
-                                      lengthSpec, leftJustify, zeroPad, &str_length);
+                                      lengthSpec, leftJustify, zeroPad, false, &str_length);
                             display_string(intStrBuffer, str_length, &chars);
                             break;
                         }
@@ -231,7 +230,7 @@ int vprintf(const char* format, va_list list) {
                             unsigned long integer = va_arg(list, unsigned long);
                             int str_length;
                             __int_str(integer, intStrBuffer, base, plusSign, spaceNoSign,
-                                      lengthSpec, leftJustify, zeroPad, &str_length);
+                                      lengthSpec, leftJustify, zeroPad, false, &str_length);
                             display_string(intStrBuffer, str_length, &chars);
                             break;
                         }
@@ -239,7 +238,7 @@ int vprintf(const char* format, va_list list) {
                             unsigned long long integer = va_arg(list, unsigned long long);
                             int str_length;
                             __int_str(integer, intStrBuffer, base, plusSign, spaceNoSign,
-                                      lengthSpec, leftJustify, zeroPad, &str_length);
+                                      lengthSpec, leftJustify, zeroPad, false, &str_length);
                             display_string(intStrBuffer, str_length, &chars);
                             break;
                         }
@@ -247,7 +246,7 @@ int vprintf(const char* format, va_list list) {
                             uintmax_t integer = va_arg(list, uintmax_t);
                             int str_length;
                             __int_str(integer, intStrBuffer, base, plusSign, spaceNoSign,
-                                      lengthSpec, leftJustify, zeroPad, &str_length);
+                                      lengthSpec, leftJustify, zeroPad, false, &str_length);
                             display_string(intStrBuffer, str_length, &chars);
                             break;
                         }
@@ -255,7 +254,7 @@ int vprintf(const char* format, va_list list) {
                             size_t integer = va_arg(list, size_t);
                             int str_length;
                             __int_str(integer, intStrBuffer, base, plusSign, spaceNoSign,
-                                      lengthSpec, leftJustify, zeroPad, &str_length);
+                                      lengthSpec, leftJustify, zeroPad, false, &str_length);
                             display_string(intStrBuffer, str_length, &chars);
                             break;
                         }
@@ -263,7 +262,7 @@ int vprintf(const char* format, va_list list) {
                             ptrdiff_t integer = va_arg(list, ptrdiff_t);
                             int str_length;
                             __int_str(integer, intStrBuffer, base, plusSign, spaceNoSign,
-                                      lengthSpec, leftJustify, zeroPad, &str_length);
+                                      lengthSpec, leftJustify, zeroPad, false, &str_length);
                             display_string(intStrBuffer, str_length, &chars);
                             break;
                         }
@@ -279,48 +278,60 @@ int vprintf(const char* format, va_list list) {
                         case 0: {
                             int integer = va_arg(list, int);
                             int str_length;
-                            __int_str(integer, intStrBuffer, base, plusSign, spaceNoSign,
-                                      lengthSpec, leftJustify, zeroPad, &str_length);
+                            bool neg = integer < 0;
+                            uintmax_t mag = neg ? -(uintmax_t)integer : (uintmax_t)integer;
+                            __int_str(mag, intStrBuffer, base, plusSign, spaceNoSign,
+                                      lengthSpec, leftJustify, zeroPad, neg, &str_length);
                             display_string(intStrBuffer, str_length, &chars);
                             break;
                         }
                         case 'H': {
                             signed char integer = (signed char)va_arg(list, int);
                             int str_length;
-                            __int_str(integer, intStrBuffer, base, plusSign, spaceNoSign,
-                                      lengthSpec, leftJustify, zeroPad, &str_length);
+                            bool neg = integer < 0;
+                            uintmax_t mag = neg ? -(uintmax_t)integer : (uintmax_t)integer;
+                            __int_str(mag, intStrBuffer, base, plusSign, spaceNoSign,
+                                      lengthSpec, leftJustify, zeroPad, neg, &str_length);
                             display_string(intStrBuffer, str_length, &chars);
                             break;
                         }
                         case 'h': {
                             short int integer = va_arg(list, int);
                             int str_length;
-                            __int_str(integer, intStrBuffer, base, plusSign, spaceNoSign,
-                                      lengthSpec, leftJustify, zeroPad, &str_length);
+                            bool neg = integer < 0;
+                            uintmax_t mag = neg ? -(uintmax_t)integer : (uintmax_t)integer;
+                            __int_str(mag, intStrBuffer, base, plusSign, spaceNoSign,
+                                      lengthSpec, leftJustify, zeroPad, neg, &str_length);
                             display_string(intStrBuffer, str_length, &chars);
                             break;
                         }
                         case 'l': {
                             long integer = va_arg(list, long);
                             int str_length;
-                            __int_str(integer, intStrBuffer, base, plusSign, spaceNoSign,
-                                      lengthSpec, leftJustify, zeroPad, &str_length);
+                            bool neg = integer < 0;
+                            uintmax_t mag = neg ? -(uintmax_t)integer : (uintmax_t)integer;
+                            __int_str(mag, intStrBuffer, base, plusSign, spaceNoSign,
+                                      lengthSpec, leftJustify, zeroPad, neg, &str_length);
                             display_string(intStrBuffer, str_length, &chars);
                             break;
                         }
                         case 'q': {
                             long long integer = va_arg(list, long long);
                             int str_length;
-                            __int_str(integer, intStrBuffer, base, plusSign, spaceNoSign,
-                                      lengthSpec, leftJustify, zeroPad, &str_length);
+                            bool neg = integer < 0;
+                            uintmax_t mag = neg ? -(uintmax_t)integer : (uintmax_t)integer;
+                            __int_str(mag, intStrBuffer, base, plusSign, spaceNoSign,
+                                      lengthSpec, leftJustify, zeroPad, neg, &str_length);
                             display_string(intStrBuffer, str_length, &chars);
                             break;
                         }
                         case 'j': {
                             intmax_t integer = va_arg(list, intmax_t);
                             int str_length;
-                            __int_str(integer, intStrBuffer, base, plusSign, spaceNoSign,
-                                      lengthSpec, leftJustify, zeroPad, &str_length);
+                            bool neg = integer < 0;
+                            uintmax_t mag = neg ? -(uintmax_t)integer : (uintmax_t)integer;
+                            __int_str(mag, intStrBuffer, base, plusSign, spaceNoSign,
+                                      lengthSpec, leftJustify, zeroPad, neg, &str_length);
                             display_string(intStrBuffer, str_length, &chars);
                             break;
                         }
@@ -328,15 +339,17 @@ int vprintf(const char* format, va_list list) {
                             size_t integer = va_arg(list, size_t);
                             int str_length;
                             __int_str(integer, intStrBuffer, base, plusSign, spaceNoSign,
-                                      lengthSpec, leftJustify, zeroPad, &str_length);
+                                      lengthSpec, leftJustify, zeroPad, false, &str_length);
                             display_string(intStrBuffer, str_length, &chars);
                             break;
                         }
                         case 't': {
                             ptrdiff_t integer = va_arg(list, ptrdiff_t);
                             int str_length;
-                            __int_str(integer, intStrBuffer, base, plusSign, spaceNoSign,
-                                      lengthSpec, leftJustify, zeroPad, &str_length);
+                            bool neg = integer < 0;
+                            uintmax_t mag = neg ? -(uintmax_t)integer : (uintmax_t)integer;
+                            __int_str(mag, intStrBuffer, base, plusSign, spaceNoSign,
+                                      lengthSpec, leftJustify, zeroPad, neg, &str_length);
                             display_string(intStrBuffer, str_length, &chars);
                             break;
                         }
@@ -424,12 +437,15 @@ int vprintf(const char* format, va_list list) {
                     }
 
                     int str_length;
-                    __int_str(floating, intStrBuffer, base, plusSign, spaceNoSign, form,
-                              leftJustify, zeroPad, &str_length);
+                    bool fneg = floating < 0;
+                    double absf = fneg ? -floating : floating;
+                    __int_str((uintmax_t)absf, intStrBuffer, base, plusSign, spaceNoSign, form,
+                              leftJustify, zeroPad, fneg, &str_length);
 
                     display_string(intStrBuffer, str_length, &chars);
 
-                    floating -= (int)floating;
+                    floating -= (intmax_t)floating;
+                    if (floating < 0) floating = -floating;
 
                     for (int i = 0; i < precSpec; ++i) {
                         floating *= 10;
@@ -439,8 +455,8 @@ int vprintf(const char* format, va_list list) {
                     if (precSpec) {
                         display_character('.', &chars);
 
-                        __int_str(decPlaces, intStrBuffer, 10, false, false, 0, false, false,
-                                  &str_length);
+                        __int_str((uintmax_t)decPlaces, intStrBuffer, 10, false, false, 0, false,
+                                  false, false, &str_length);
                         intStrBuffer[precSpec] = 0;
                         display_string(intStrBuffer, str_length, &chars);
                     } else if (altForm) {
@@ -466,7 +482,7 @@ int vprintf(const char* format, va_list list) {
 
             if (specifier == 'e' || specifier == 'E') {
                 int str_length;
-                __int_str(expo, intStrBuffer, 10, false, false, 2, false, true, &str_length);
+                __int_str(expo, intStrBuffer, 10, false, false, 2, false, true, false, &str_length);
                 display_string(intStrBuffer, str_length, &chars);
             }
         } else {
