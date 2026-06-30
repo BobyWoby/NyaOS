@@ -17,6 +17,11 @@ __attribute__((
     section(".limine_requests"))) static volatile struct limine_memmap_request
     mmap_request = {.id = LIMINE_MEMMAP_REQUEST_ID, .revision = 0};
 
+__attribute__((
+    used,
+    section(".limine_requests"))) static volatile struct limine_hhdm_request
+    hhdm_request = {.id = LIMINE_HHDM_REQUEST_ID, .revision = 0};
+
 static inline void bm_set(uint32_t i) {
   bitmap[i >> 5] |= (1u << (i & 0b11111));
 }
@@ -56,12 +61,24 @@ void free_available_memory() {
   }
 }
 
+uintptr_t bitmap_addr(uint64_t bitmap_size){
+    uint64_t offset = hhdm_request.response->offset;
+    struct limine_memmap_response *mmap = mmap_request.response;
+    for (int i = 0; i < mmap->entry_count; i++) {
+      struct limine_memmap_entry *entry = mmap->entries[i];
+      if (entry->type == LIMINE_MEMMAP_USABLE && entry->length > bitmap_size) {
+          return entry->base + offset; 
+      }
+    }
+    //TODO: PANIC
+}
+
 void pfa_init() {
   npages = mem_high() / PAGE_SIZE;
-  uint32_t bitmap_size = ((npages + 31) / 32) * sizeof(uint32_t);
+  uint64_t bitmap_size = ((npages + 31) / 32) * sizeof(uint32_t);
 
-  uintptr_t addr = ((uintptr_t)&endkernel + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
-  bitmap = (uint32_t *)addr;
+  // uintptr_t addr = 
+  bitmap = (uint32_t *)bitmap_addr(bitmap_size);
 
   // set all the pages to be used by default
   for (int i = 0; i < ((npages + 31) >> 5); ++i) {
@@ -71,10 +88,10 @@ void pfa_init() {
   free_available_memory();
 
   // mark everything up to end-of-bitmap as used, might not be necessary
-  uint32_t reserved = ((addr + bitmap_size) + PAGE_SIZE - 1) / PAGE_SIZE;
-  for (uint32_t i = 0; i < reserved; ++i) {
-    bm_set(i);
-  }
+  // uint32_t reserved = ((addr + bitmap_size) + PAGE_SIZE - 1) / PAGE_SIZE;
+  // for (uint32_t i = 0; i < reserved; ++i) {
+  //   bm_set(i);
+  // }
 }
 
 // return physical address of the frame
