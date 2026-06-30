@@ -35,8 +35,8 @@ typedef struct lm_sysseg_desc {
   uint32_t reserved;
 } lm_sysseg_desc_t;
 
-extern uint32_t *page_directory;
-extern uint32_t *first_page_table;
+extern uint64_t *page_directory;
+extern uint64_t *first_page_table;
 
 void gdt_init();
 void paging_init();

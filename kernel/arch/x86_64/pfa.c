@@ -1,7 +1,6 @@
 #include <kernel/limine.h>
-#include <kernel/system.h>
-#include <kernel/page.h>
 #include <kernel/pfa.h>
+#include <kernel/system.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -61,23 +60,23 @@ void free_available_memory() {
   }
 }
 
-uintptr_t bitmap_addr(uint64_t bitmap_size){
-    uint64_t offset = hhdm_request.response->offset;
-    struct limine_memmap_response *mmap = mmap_request.response;
-    for (int i = 0; i < mmap->entry_count; i++) {
-      struct limine_memmap_entry *entry = mmap->entries[i];
-      if (entry->type == LIMINE_MEMMAP_USABLE && entry->length > bitmap_size) {
-          return entry->base + offset; 
-      }
+uintptr_t bitmap_addr(uint64_t bitmap_size) {
+  uint64_t offset = hhdm_request.response->offset;
+  struct limine_memmap_response *mmap = mmap_request.response;
+  for (int i = 0; i < mmap->entry_count; i++) {
+    struct limine_memmap_entry *entry = mmap->entries[i];
+    if (entry->type == LIMINE_MEMMAP_USABLE && entry->length > bitmap_size) {
+      return entry->base + offset;
     }
-    //TODO: PANIC
+  }
+  // TODO: PANIC
 }
 
 void pfa_init() {
   npages = mem_high() / PAGE_SIZE;
   uint64_t bitmap_size = ((npages + 31) / 32) * sizeof(uint32_t);
 
-  // uintptr_t addr = 
+  // uintptr_t addr =
   bitmap = (uint32_t *)bitmap_addr(bitmap_size);
 
   // set all the pages to be used by default

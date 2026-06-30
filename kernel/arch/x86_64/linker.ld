@@ -20,9 +20,9 @@ SECTIONS
 {
 	/* Begin putting sections at 1 MiB, a conventional place for kernels to be
 	   loaded at by the bootloader. */
-    kernel_start_virtual = .;
-	. = 0xffffffff80000000;
     kernel_start_physical = .;
+	. = 0xffffffff80000000;
+    kernel_start_virtual = .;
 
     .limine_requests : {
         KEEP(*(.limine_requests_start))
@@ -66,7 +66,7 @@ SECTIONS
 		*(COMMON)
 		*(.bss)
         ebss = .;
-        endkernel = .;
+        kernel_end_virtual = .;
 	}
 
     /* Discard .note.* and .eh_frame* since they may cause issues on some hosts. */
