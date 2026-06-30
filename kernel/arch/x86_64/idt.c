@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <kernel/idt.h>
+#include <kernel/pic.h>
 #include <kernel/isr.h>
 
 #define IDT_MAX_DESCRIPTORS 256
@@ -67,5 +68,6 @@ void idt_init(){
         vectors[vector] = true;
     }
     __asm__ volatile("lidt %0" : : "m"(idtr)); // load new IDT
+    pic_init();
     __asm__ volatile ("sti"); // set interrupt flag
 }

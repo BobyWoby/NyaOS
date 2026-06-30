@@ -31,7 +31,10 @@ void kernel_main() {
     enable_sse();
     gdt_init();
     idt_init();
+    // hcf();
+
     pfa_init();
+    hcf();
 
     terminal_initialize();
 

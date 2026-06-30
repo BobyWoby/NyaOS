@@ -1,4 +1,5 @@
 #include <kernel/limine.h>
+#include <kernel/system.h>
 #include <kernel/page.h>
 #include <kernel/pfa.h>
 #include <stddef.h>
