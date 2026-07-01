@@ -10,16 +10,21 @@
 //     uint64_t rip, cs, rflags, rsp, ss;           // CPU pushes
 // } registers_t;
 
-void exception_handler(registers_t* regs) {
-    printf("\n*** EXCEPTION %llu", regs->vector);
-    printf("err=%#llx  RIP=%#llx  CS=%#llx  RFLAGS=%#llx\n", regs->error_code, regs->rip, regs->cs,
-           regs->rflags);
-    printf("RAX=%#llx RBX=%#llx ... RSP=%#llx\n", regs->rax, regs->rbx, regs->rsp);
+void page_fault(uint64_t vaddr) {
+  printf("faulting addr (CR2)=%#llx\n", vaddr);
+}
 
-    if (regs->vector == 14) {  // page fault
-        uint64_t cr2;
-        __asm__ volatile("mov %%cr2, %0" : "=r"(cr2));
-        printf("faulting addr (CR2)=%#llx\n", cr2);
-    }
-    __asm__ volatile("cli; hlt");  // hangs
+void exception_handler(registers_t *regs) {
+  printf("\n*** EXCEPTION %llu\n", regs->vector);
+  printf("err=%#llx  RIP=%#llx  CS=%#llx  RFLAGS=%#llx\n", regs->error_code,
+         regs->rip, regs->cs, regs->rflags);
+  printf("RAX=%#llx RBX=%#llx ... RSP=%#llx\n", regs->rax, regs->rbx,
+         regs->rsp);
+
+  if (regs->vector == 14) { // page fault
+    uint64_t cr2;
+    __asm__ volatile("mov %%cr2, %0" : "=r"(cr2));
+    page_fault(cr2);
+  }
+  __asm__ volatile("cli; hlt"); // hangs
 }
