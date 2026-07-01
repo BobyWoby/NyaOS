@@ -17,3 +17,8 @@ __attribute__((
     used,
     section(".limine_requests"))) volatile struct limine_memmap_request
     mmap_request = {.id = LIMINE_MEMMAP_REQUEST_ID, .revision = 0};
+
+__attribute__((
+    used,
+    section(".limine_requests"))) volatile struct limine_executable_address_request
+    eaddr_request = {.id = LIMINE_EXECUTABLE_ADDRESS_REQUEST_ID, .revision = 0};

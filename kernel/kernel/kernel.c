@@ -38,9 +38,8 @@ void kernel_main() {
   // pfa_init();
   //
   // hcf();
-  printf("UwU Hallo %sUwu\nHow are you?", ":3");
+  printf("UwU Hallo %sUwu\nWelcome to NyaOS\n", ":3");
   pfa_init();
   paging_init();
-  printf("paging initialized!\n");
   hcf();
 }

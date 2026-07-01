@@ -9,6 +9,7 @@
 #define PAGE_SIZE 0x1000
 static uint32_t npages;
 static uint32_t *bitmap;
+static uint64_t bm_paddr;
 
 extern char endkernel; // only care abt the address of this
 
@@ -59,6 +60,7 @@ uintptr_t bitmap_addr(uint64_t bitmap_size) {
   for (int i = 0; i < mmap->entry_count; i++) {
     struct limine_memmap_entry *entry = mmap->entries[i];
     if (entry->type == LIMINE_MEMMAP_USABLE && entry->length > bitmap_size) {
+        bm_paddr = entry->base;
       return entry->base + offset;
     }
   }
@@ -78,6 +80,14 @@ void pfa_init() {
   }
 
   free_available_memory();
+
+  uint64_t first = bm_paddr / PAGE_SIZE;
+  uint64_t count = (bitmap_size + PAGE_SIZE - 1) / PAGE_SIZE;
+  for(uint64_t i = first; i < first + count; ++i){
+      bm_set(i);
+  }
+
+  bm_set(0); // mark page 0 as used
 
   // mark everything up to end-of-bitmap as used, might not be necessary
   // uint32_t reserved = ((addr + bitmap_size) + PAGE_SIZE - 1) / PAGE_SIZE;
