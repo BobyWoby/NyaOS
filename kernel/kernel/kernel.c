@@ -36,10 +36,11 @@ void kernel_main() {
   // gdt_init();
   // // set up pfa here
   // pfa_init();
-  paging_init();
   //
   // hcf();
   printf("UwU Hallo %sUwu\nHow are you?", ":3");
   pfa_init();
+  paging_init();
+  printf("paging initialized!\n");
   hcf();
 }

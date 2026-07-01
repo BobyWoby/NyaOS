@@ -1,25 +1,18 @@
 #include <kernel/limine.h>
+#include <kernel/requests.h>
 #include <kernel/pfa.h>
 #include <kernel/system.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #define PAGE_SIZE 0x1000
-#define ERROR 0x01
 static uint32_t npages;
 static uint32_t *bitmap;
 
 extern char endkernel; // only care abt the address of this
 
-__attribute__((
-    used,
-    section(".limine_requests"))) static volatile struct limine_memmap_request
-    mmap_request = {.id = LIMINE_MEMMAP_REQUEST_ID, .revision = 0};
 
-__attribute__((
-    used,
-    section(".limine_requests"))) static volatile struct limine_hhdm_request
-    hhdm_request = {.id = LIMINE_HHDM_REQUEST_ID, .revision = 0};
 
 static inline void bm_set(uint32_t i) {
   bitmap[i >> 5] |= (1u << (i & 0b11111));
@@ -128,6 +121,7 @@ pageframe_t kalloc_frame() {
       pre_frames[i] = kalloc_frame_int();
       if (pre_frames[i] == NULL) {
         // TODO: PANIC
+          printf("out of frames");
       }
     }
     pframe = 0;

@@ -4,10 +4,11 @@ Text rendering is currently assuming that the pixel format is 0x00RRGGBB
 ## TODO
 
 - [x] adding integer printing to printf
-- [ ] interrupt/exception handling
-- [ ] Page frame allocator
+- [x] interrupt/exception handling(very basic rn tho)
+- [x] Page frame allocator
 - [x] global descriptor table
 - [ ] virtual memory mapping & the HEAP
+    - Setting up paging rn, and heap will come soon
 
 ## Further out goals (in no particular order)
 

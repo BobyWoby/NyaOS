@@ -1,4 +1,5 @@
 #include <kernel/limine.h>
+#include <kernel/requests.h>
 #include <kernel/system.h>
 #include <kernel/tty.h>
 #include <stdbool.h>
@@ -22,13 +23,7 @@ static PSF_font* font_header;
 static struct limine_framebuffer* fb;
 uint32_t font_size = 3;
 
-__attribute__((used, section(".limine_requests"))) static volatile struct limine_framebuffer_request
-    framebuffer_request = {.id = LIMINE_FRAMEBUFFER_REQUEST_ID, .revision = 0};
 
-__attribute__((
-    used,
-    section(".limine_requests"))) static volatile struct limine_module_request module_request = {
-    .id = LIMINE_MODULE_REQUEST_ID, .revision = 0};
 
 void putpixel(color_t c, unsigned int x, unsigned int y) {
     volatile uint32_t* fb_ptr = fb->address;

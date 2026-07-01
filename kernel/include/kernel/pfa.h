@@ -9,5 +9,6 @@ void pfa_init();
 pageframe_t kalloc_frame_int();
 pageframe_t kalloc_frame();
 void kfree_frame();
+uint64_t mem_high();
 
 #endif
