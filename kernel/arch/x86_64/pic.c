@@ -17,7 +17,21 @@ void remap_irqs() {
     outb(icw2, PIC_SECONDARY_INTRDATA);
 }
 
+// Firmware/Limine leaves the CPU's Local APIC enabled. While it's enabled,
+// the 8259 PIC's INTR line only reaches the core if LAPIC LINT0 is in ExtINT
+// mode; otherwise every legacy IRQ is silently dropped. Since we drive
+// interrupts through the PIC, disable the LAPIC (IA32_APIC_BASE bit 11) so
+// external interrupts are delivered the legacy way.
+static void lapic_disable() {
+    uint32_t lo, hi;
+    __asm__ volatile("rdmsr" : "=a"(lo), "=d"(hi) : "c"(0x1B));
+    lo &= ~(1u << 11);
+    __asm__ volatile("wrmsr" : : "a"(lo), "d"(hi), "c"(0x1B));
+}
+
 void pic_init() {
+    lapic_disable();
+
     uint8_t icw1 = 0b00010001;
     outb(icw1, PIC_PRIMARY_CMDSTAT);
     outb(icw1, PIC_SECONDARY_CMDSTAT);

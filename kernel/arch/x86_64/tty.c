@@ -21,7 +21,7 @@ static uint16_t* terminal_buffer;
 static struct limine_file* font_file;
 static PSF_font* font_header;
 static struct limine_framebuffer* fb;
-uint32_t font_size = 3;
+uint32_t font_size = 2;
 
 
 
@@ -105,7 +105,10 @@ void terminal_putchar(char c) {
     // TODO: parse other escape characters?
     if (uc == '\n') {
         terminal_column = 0;
-        if (++terminal_row == fb->height / (font_header->height * font_size)) terminal_row = 0;
+        if (++terminal_row == fb->height / (font_header->height * font_size)){
+            clear_screen();
+            terminal_row = 0;
+        } 
         return;
     }
 
@@ -115,7 +118,23 @@ void terminal_putchar(char c) {
 
     if (++terminal_column == fb->width / (font_header->width * font_size)) {
         terminal_column = 0;
-        if (++terminal_row == fb->height / (font_header->height * font_size)) terminal_row = 0;
+        if (++terminal_row == fb->height / (font_header->height * font_size)){
+            clear_screen();
+            terminal_row = 0;
+        } 
+    }
+}
+
+void clear_screen(){
+    volatile uint32_t* fb_ptr = fb->address;
+    for (size_t y = 0; y < fb->height; y++) {
+        for (size_t x = 0; x < fb->width; x++) {
+            // uint32_t nX = x * 255 / fb->width;
+            // uint32_t nY = y * 255 / fb->height;
+            // color_t c = {0, nX, nY};
+            putpixel(terminal_bg, x, y);
+            // fb_ptr[y * (fb->pitch / 4) + x] = (nY << 8) | nX;
+        }
     }
 }
 

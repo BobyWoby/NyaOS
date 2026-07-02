@@ -2,7 +2,6 @@
 #include <drivers/keyboard.h>
 #include <drivers/ps2.h>
 #include <kernel/idt.h>
-#include <kernel/io.h>
 #include <kernel/limine.h>
 #include <kernel/pager.h>
 #include <kernel/pfa.h>
@@ -49,18 +48,6 @@ void kernel_main() {
     ps2_init();
     kb_enable_scanning();
     printf("\ntest\n");
-
-    /* --- TEMP DEBUG: check what's gating IRQ delivery --- */
-    {
-        uint8_t imr = inb(0x21);            /* PIC1 mask: bit1 set => KB masked */
-        outb(0x20, 0x64);                   /* read PS/2 config byte */
-        while (!(inb(0x64) & 1));
-        uint8_t cfg = inb(0x60);            /* bit0 set => port1 IRQ enabled */
-        uint64_t rflags;
-        __asm__ volatile("pushfq; pop %0" : "=r"(rflags));
-        printf("DBG imr=%#x cfg=%#x IF=%d\n",
-               imr, cfg, (int)((rflags >> 9) & 1));
-    }
 
     // spin forever ig
     hcf();

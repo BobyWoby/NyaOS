@@ -111,16 +111,14 @@ void ps2_init() {
     write(cfg, DATA);
 
     send(0xff, 0);
-    uint8_t did = poll();
+    uint8_t did = poll();  // ACK (0xfa)
     if (did != 0xfa && did != 0xaa) {
         printf("PS/2 first port device reset failed\n");
         return;
     }
-    did = poll();
-
-    // send(0xf2, 0);
-    did = poll();
-    did = poll();
+    poll();  // self-test result (0xaa)
+    // drain any remaining bytes without blocking
+    while (inb(STATUS) & 0x1) inb(DATA);
     printf("PS/2 first port device reset\n");
 
     if (dual_channel) {
@@ -131,8 +129,9 @@ void ps2_init() {
             printf("PS/2 second port device reset failed\n");
             return;
         }
-        did = poll();
-        did = poll();
+        poll();  // self-test result (0xaa)
+        // drain any remaining bytes (mouse also sends its device id)
+        while (inb(STATUS) & 0x1) inb(DATA);
         printf("PS/2 second port device reset\n");
     }
 

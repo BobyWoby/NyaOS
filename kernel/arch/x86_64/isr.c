@@ -1,5 +1,6 @@
 #include <kernel/isr.h>
 #include <kernel/pic.h>
+#include <kernel/io.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -14,10 +15,19 @@
 void page_fault(uint64_t vaddr) { printf("faulting addr (CR2)=%#llx\n", vaddr); }
 
 void handle_keyboard() {
-    printf("keyboard\n");
+    uint8_t scancode = inb(0x60);  // read + re-arm IRQ1
+    printf("scancode: %#x\n", scancode);
 }
 
 void exception_handler(registers_t* regs) {
+    // Hardware IRQs (remapped to 0x20-0x2f): dispatch quietly and return.
+    if (regs->vector >= 0x20 && regs->vector <= 0x2f) {
+        if (regs->vector == 0x21) handle_keyboard();
+        send_eoi(regs->vector - 0x20);
+        return;
+    }
+
+    // CPU exceptions: dump state and halt.
     printf("\n*** EXCEPTION %llu\n", regs->vector);
     printf("err=%#llx  RIP=%#llx  CS=%#llx  RFLAGS=%#llx\n", regs->error_code, regs->rip, regs->cs,
            regs->rflags);
@@ -27,14 +37,6 @@ void exception_handler(registers_t* regs) {
         uint64_t cr2;
         __asm__ volatile("mov %%cr2, %0" : "=r"(cr2));
         page_fault(cr2);
-        __asm__ volatile("cli; hlt");  // hangs
-    } 
-    if (regs->vector >= 0x20 && regs->vector <= 0x2f ) {
-        // keyboard interrupt
-        if(regs->vector == 0x21) handle_keyboard();
-
-        send_eoi(regs->vector - 0x20);
-        return;
     }
     __asm__ volatile("cli; hlt");  // hangs
 }
