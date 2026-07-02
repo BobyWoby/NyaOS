@@ -1,4 +1,5 @@
 # NyaOS - :3 (WIP)
+
 Text rendering is currently assuming that the pixel format is 0x00RRGGBB
 
 ## TODO
@@ -7,15 +8,16 @@ Text rendering is currently assuming that the pixel format is 0x00RRGGBB
 - [x] interrupt/exception handling(very basic rn tho)
 - [x] Page frame allocator
 - [x] global descriptor table
-- [ ] virtual memory mapping & the HEAP
-    - Setting up paging rn, and heap will come soon
+- [x] PS/2 Keyboard Driver
+- [ ] virtual memory mapping
+    - Paging setup, very primitive right now though
+    - TODO: multithreaded paging (has other dependencies though)
+- [ ] Heap
 
 ## Further out goals (in no particular order)
 
 - user space
 - Round robin scheduler
-- multi-level paging
 - graphics?
 - filesystem (ZFS?)
 - multithreading
-- Keyboard driver

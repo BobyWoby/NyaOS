@@ -8,17 +8,21 @@
 #define PIC_SECONDARY_CMDSTAT 0xa0
 #define PIC_SECONDARY_INTRDATA 0xa1
 
-void pic_init() {
-  uint8_t icw1 = 0b00010001;
-  outb(icw1, PIC_PRIMARY_CMDSTAT);
-  outb(icw1, PIC_SECONDARY_CMDSTAT);
-
+void remap_irqs() {
   // remap IRQs to 32-47 since the first 31 are reserved by hardware
   uint8_t icw2 = 0x20; // for primary PIC
   outb(icw2, PIC_PRIMARY_INTRDATA);
 
   icw2 = 0x28; // for secondary PIC
   outb(icw2, PIC_SECONDARY_INTRDATA);
+}
+
+void pic_init() {
+  uint8_t icw1 = 0b00010001;
+  outb(icw1, PIC_PRIMARY_CMDSTAT);
+  outb(icw1, PIC_SECONDARY_CMDSTAT);
+
+  remap_irqs();
 
   uint8_t icw3 = 0b00000100; // use IRQ2 on the primary PIC
   outb(icw3, PIC_PRIMARY_CMDSTAT);
