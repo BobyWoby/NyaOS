@@ -1,6 +1,9 @@
+#include <drivers/ps2.h>
 #include <kernel/io.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <stdio.h>
+// #include <sys/io.h>  //TODO: Comment this out
 
 // used for reading data received from ps/2 device
 #define DATA 0x60
@@ -13,96 +16,150 @@
 void send(uint8_t data, int port);
 uint8_t poll();
 
-void set_config(uint8_t mask, bool and) {
-  outb(0x20, COMMAND);
-  while (inb(STATUS) & 0x3 != 0x1) {
-    // make sure the command was sent and the response was received
-  }
-  uint8_t config = inb(DATA);
-  // clear bits 6, 4, and 0
-  if (and) {
-    config &= mask;
-  } else {
-    config |= mask;
-  }
+void write(uint8_t data, uint8_t port) {
+    while (inb(STATUS) & 0x2);
+    outb(data, port);
+}
 
-  outb(config, DATA);
-  outb(0x60, COMMAND);
+uint8_t read() {
+    while (!(inb(STATUS) & 0x1));
+    return inb(DATA);
+}
 
-  while (inb(STATUS) & 0x2) {
-  }
+bool check_aml() { return true; }
+
+void disable_devices() {
+    write(0xad, COMMAND);
+    write(0xa7, COMMAND);
+}
+
+uint8_t detect_device(uint8_t port){
+    send(0xf5, port);
+    while(poll() != 0xfa){
+    }
+    send(0xf2, port);
+    while(poll() != 0xfa){
+    }
+    return poll();
 }
 
 void ps2_init() {
-  // disable devices during initialization
-  outb(0xad, COMMAND);
-  outb(0xa7, COMMAND);
+    if (!check_aml()) {
+        printf("No PS/2 Detected\n");
+        return;
+    }
+    disable_devices();
+    inb(DATA);  // just flushing so we don't actually care if there's smt here
 
-  inb(DATA);
+    // Set Controller Configuration Byte
+    write(0x20, COMMAND);
+    uint8_t cfg = read();
+    cfg &= ~(0b1010001);
+    write(0x60, COMMAND);
+    write(cfg, DATA);
 
-  set_config(~(0b1010001), true);
+    // Controller self test
+    write(0xaa, COMMAND);
+    if (read() != 0x55) {
+        printf("PS/2 self test failed\n");
+        return;
+    }
+    // NOTE: Might be unnecessary
+    write(0x60, COMMAND);
+    write(cfg, DATA);
 
-  // TODO: perform a controller self test here
-  outb(0xaa, COMMAND);
-  while (inb(STATUS) & 0x3 != 0x1) {
-    // make sure the command was sent and the response was received
-  }
-  if (inb(DATA) != 0x55) {
-    printf("PS/2 Controller Self Test Failed\n");
-  }
+    // Check if there are two channels
+    bool dual_channel = false;
+    write(0xa8, COMMAND);
+    write(0x20, COMMAND);
+    if (!((cfg = read()) & 0x20)) {
+        dual_channel = true;
+        write(0xa7, COMMAND);
+        cfg &= ~(0b100010);
+        write(0x60, COMMAND);
+        write(cfg, DATA);
+    }
 
-  outb(0xa8, COMMAND);
+    // interface tests
+    write(0xab, COMMAND);
+    uint8_t res;
+    if ((res = read()) != 0x00) {
+        printf("PS/2 first port test failed with code %X\n", res);
+        return;
+    }
+    if (dual_channel) {
+        printf("Dual Channel PS/2 Controller Detected\n");
+        write(0xa9, COMMAND);
+        if (read() != 0x00) {
+            printf("PS/2 second port test failed\n");
+            return;
+        }
+    }
 
-  outb(0x20, COMMAND);
-  while (inb(STATUS) & 0x3 != 0x1) {
-    // make sure the command was sent and the response was received
-  }
-  config = inb(DATA);
-  if (config & 0x10) {
-    // dual channel device
-    outb(0xa7, COMMAND);
-    set_config(~(0b100010), true);
-  }
-  // TODO: Perform interface tests
+    // enable devices
+    write(0xae, COMMAND);
+    if (dual_channel) write(0xa8, COMMAND);
+    write(0x20, COMMAND);
+    cfg = read();
+    cfg |= (0x1);
+    if (dual_channel) cfg |= 0x2;
+    write(0x60, COMMAND);
+    write(cfg, DATA);
 
-  // re-enable devices
-  outb(0xae, COMMAND);
-  outb(0xa8, COMMAND);
-  // need to re-enable interrupts here
-  set_config(0b11, false);
+    send(0xff, 0);
+    uint8_t did = poll();
+    if (did != 0xfa && did != 0xaa) {
+        printf("PS/2 first port device reset failed\n");
+        return;
+    }
+    did = poll();
 
-  send(0xff, 0);
-  send(0xff, 1);
-  uint8_t response = poll();
-  if (response == 0xfa) {
-    response = poll();
-    // check for 0xaa
-    uint8_t ps2id = poll();
-  } else {
-    printf("PS/2 response is wrong\n");
-  }
+    // send(0xf2, 0);
+    did = poll();
+    did = poll();
+    printf("PS/2 first port device reset\n");
+
+    if (dual_channel) {
+        while (inb(STATUS) & 0x1) inb(DATA);   
+        send(0xff, 1);
+        uint8_t did = poll();
+        if (did != 0xfa && did != 0xaa) {
+            printf("PS/2 second port device reset failed\n");
+            return;
+        }
+        did = poll();
+        did = poll();
+        printf("PS/2 second port device reset\n");
+    }
+
+    uint8_t did1 = detect_device(0);
+    printf("PS/2 first port device ID: %x", did1);
+    while (inb(STATUS) & 0x1) printf(" %x\n", inb(DATA));   
+
+    uint8_t did2 = detect_device(1);
+    printf("PS/2 second port device ID: %x", did2);
+    while (inb(STATUS) & 0x1) printf(" %x\n", inb(DATA));   
 }
 
 uint8_t poll() {
-  while (!(inb(STATUS) & 0x1)) {
-  }
-  return inb(DATA);
+    while (!(inb(STATUS) & 0x1)) {
+    }
+    return inb(DATA);
 }
 
 // this is blocking rn, might wanna change that at some point
 // port is either 0 for the first port, or 1 for the second
 void send(uint8_t data, int port) {
-  if (!port) {
-    while (inb(STATUS) & 0x2) {
+    if (!port) {
+        while (inb(STATUS) & 0x2) {
+        }
+        outb(data, DATA);
+    } else {
+        outb(0xd4, COMMAND);
+        while (inb(STATUS) & 0x2);
+        outb(data, DATA);
     }
-    outb(data, DATA);
-  } else {
-    outb(0xd4, COMMAND);
-    while (inb(STATUS) & 0x2)
-      ;
-    outb(data, DATA);
-  }
-  return;
+    return;
 }
 
-uint8_t read() { return inb(DATA); }
+uint8_t recv() { return inb(DATA); }

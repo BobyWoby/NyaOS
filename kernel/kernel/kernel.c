@@ -5,6 +5,7 @@
 #include <kernel/pfa.h>
 #include <kernel/system.h>
 #include <kernel/tty.h>
+#include <drivers/ps2.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -41,5 +42,6 @@ void kernel_main() {
   printf("UwU Hallo %sUwu\nWelcome to NyaOS\n", ":3");
   pfa_init();
   paging_init();
+  ps2_init();
   hcf();
 }
