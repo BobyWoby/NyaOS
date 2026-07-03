@@ -1,47 +1,67 @@
 // #include <kernel/multiboot.h>
+#include <drivers/keyboard.h>
+#include <drivers/ps2.h>
 #include <kernel/idt.h>
+#include <kernel/io.h>
 #include <kernel/limine.h>
 #include <kernel/pager.h>
 #include <kernel/pfa.h>
 #include <kernel/system.h>
 #include <kernel/tty.h>
-#include <drivers/ps2.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 
-__attribute__((used, section(".limine_requests"))) static volatile uint64_t
-    limine_base_revision[] = LIMINE_BASE_REVISION(6);
+__attribute__((used, section(".limine_requests"))) static volatile uint64_t limine_base_revision[] =
+    LIMINE_BASE_REVISION(6);
 
-__attribute__((used,
-               section(".limine_requests_start"))) static volatile uint64_t
-    limine_requests_start_marker[] = LIMINE_REQUESTS_START_MARKER;
+__attribute__((
+    used,
+    section(".limine_requests_start"))) static volatile uint64_t limine_requests_start_marker[] =
+    LIMINE_REQUESTS_START_MARKER;
 
-__attribute__((used, section(".limine_requests_end"))) static volatile uint64_t
-    limine_requests_end_marker[] = LIMINE_REQUESTS_END_MARKER;
+__attribute__((
+    used, section(".limine_requests_end"))) static volatile uint64_t limine_requests_end_marker[] =
+    LIMINE_REQUESTS_END_MARKER;
 
 extern void enable_sse();
 
 void kernel_main() {
-  if (LIMINE_BASE_REVISION_SUPPORTED(limine_base_revision) == false) {
+    if (LIMINE_BASE_REVISION_SUPPORTED(limine_base_revision) == false) {
+        hcf();
+    }
+
+    enable_sse();
+    gdt_init();
+    idt_init();
+
+    terminal_initialize();
+
+    // gdt_init();
+    // // set up pfa here
+    // pfa_init();
+    //
+    // hcf();
+    printf("UwU Hallo %sUwu\nWelcome to NyaOS\n", ":3");
+    pfa_init();
+    paging_init();
+    ps2_init();
+    kb_enable_scanning();
+    printf("\ntest\n");
+
+    /* --- TEMP DEBUG: check what's gating IRQ delivery --- */
+    {
+        uint8_t imr = inb(0x21);            /* PIC1 mask: bit1 set => KB masked */
+        outb(0x20, 0x64);                   /* read PS/2 config byte */
+        while (!(inb(0x64) & 1));
+        uint8_t cfg = inb(0x60);            /* bit0 set => port1 IRQ enabled */
+        uint64_t rflags;
+        __asm__ volatile("pushfq; pop %0" : "=r"(rflags));
+        printf("DBG imr=%#x cfg=%#x IF=%d\n",
+               imr, cfg, (int)((rflags >> 9) & 1));
+    }
+
+    // spin forever ig
     hcf();
-  }
-
-  enable_sse();
-  gdt_init();
-  idt_init();
-
-  terminal_initialize();
-
-  // gdt_init();
-  // // set up pfa here
-  // pfa_init();
-  //
-  // hcf();
-  printf("UwU Hallo %sUwu\nWelcome to NyaOS\n", ":3");
-  pfa_init();
-  paging_init();
-  ps2_init();
-  hcf();
 }

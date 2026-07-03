@@ -43,6 +43,10 @@ uint8_t detect_device(uint8_t port){
     return poll();
 }
 
+void enable_scanning(uint8_t port){
+    send(0xf4, port);
+}
+
 void ps2_init() {
     if (!check_aml()) {
         printf("No PS/2 Detected\n");

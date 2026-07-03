@@ -11,7 +11,6 @@ typedef struct {
     uint64_t rip, cs, rflags, rsp, ss;           // CPU pushes
 } registers_t;
 
-__attribute__((noreturn))
 void exception_handler(registers_t *regs);
 
 
