@@ -1,4 +1,5 @@
 #include <kernel/isr.h>
+#include <drivers/keyboard.h>
 #include <kernel/pic.h>
 #include <kernel/io.h>
 #include <stddef.h>
@@ -13,6 +14,8 @@
 // } registers_t;
 
 void page_fault(uint64_t vaddr) { printf("faulting addr (CR2)=%#llx\n", vaddr); }
+
+
 
 void handle_keyboard() {
     uint8_t scancode = inb(0x60);  // read + re-arm IRQ1
