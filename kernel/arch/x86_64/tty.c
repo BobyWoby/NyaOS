@@ -9,10 +9,6 @@
 #include <string.h>
 
 
-static const size_t VGA_WIDTH = 80;
-static const size_t VGA_HEIGHT = 25;
-static uint16_t* const VGA_MEMORY = (uint16_t*)0xB8000;
-
 static size_t terminal_row;
 static size_t terminal_column;
 static color_t terminal_fg = {202, 211, 245};

@@ -47,6 +47,23 @@ void enable_scanning(uint8_t port){
     send(0xf4, port);
 }
 
+void dev2_enable_irq(){
+    write(0x20, COMMAND);
+    uint8_t cfg = read();
+    cfg |= (0x2);
+    write(0x60, COMMAND);
+    write(cfg, DATA);
+}
+
+void dev1_enable_irq(){
+    write(0x20, COMMAND);
+    uint8_t cfg = read();
+    cfg |= (0x1);
+    // if (dual_channel) cfg |= 0x2;
+    write(0x60, COMMAND);
+    write(cfg, DATA);
+}
+
 void ps2_init() {
     if (!check_aml()) {
         printf("No PS/2 Detected\n");
@@ -103,12 +120,6 @@ void ps2_init() {
     // enable devices
     write(0xae, COMMAND);
     if (dual_channel) write(0xa8, COMMAND);
-    write(0x20, COMMAND);
-    cfg = read();
-    cfg |= (0x1);
-    if (dual_channel) cfg |= 0x2;
-    write(0x60, COMMAND);
-    write(cfg, DATA);
 
     send(0xff, 0);
     uint8_t did = poll();  // ACK (0xfa)
@@ -136,11 +147,11 @@ void ps2_init() {
     }
 
     uint8_t did1 = detect_device(0);
-    printf("PS/2 first port device ID: %x", did1);
+    printf("PS/2 first port device ID: %x\n", did1);
     while (inb(STATUS) & 0x1) printf(" %x\n", inb(DATA));   
 
     uint8_t did2 = detect_device(1);
-    printf("PS/2 second port device ID: %x", did2);
+    printf("PS/2 second port device ID: %x\n", did2);
     while (inb(STATUS) & 0x1) printf(" %x\n", inb(DATA));   
 }
 

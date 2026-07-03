@@ -47,7 +47,6 @@ void kernel_main() {
     paging_init();
     ps2_init();
     kb_enable_scanning();
-    printf("\ntest\n");
 
     // spin forever ig
     hcf();

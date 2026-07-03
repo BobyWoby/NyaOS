@@ -2,6 +2,7 @@
 #define __SYSTEM_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef struct {
   uint32_t reserved;
@@ -60,7 +61,7 @@ static inline int cpuid_string(int code, uint32_t where[4]) {
   return (int)where[0];
 }
 
-constexpr uint32_t CPUID_FLAG_MSR = 1 << 5;
+static const uint32_t CPUID_FLAG_MSR = 1 << 5;
 
 static inline bool cpuHasMSR() {
   static uint32_t a, d;

@@ -80,36 +80,36 @@ void map_page(void *paddr, void *vaddr, unsigned int flags) {
   pt[ptidx] = ((uint64_t)paddr) | (flags & 0xFFF) | 0x3;
 }
 
-void free_page(void *vaddr) {
-  uint64_t pml4idx = (uint64_t)vaddr >> 39 & 0x1ff;
-  uint64_t pdptidx = ((uint64_t)vaddr >> 30) & 0x1ff;
-  uint64_t pdidx = ((uint64_t)vaddr >> 21) & 0x1ff;
-  uint64_t ptidx = ((uint64_t)vaddr >> 12) & 0x1ff;
-
-  if (!(pml4[pml4idx] & 0x1)) {
-    return; // nothing to do
-  }
-
-  uint64_t *pdpt = (uint64_t *)((pml4[pml4idx] & ~0xfff) + offset);
-  if (!(pdpt[pdptidx] & 0x1)) {
-    return;
-  }
-  uint64_t *pd = (uint64_t *)((pdpt[pdptidx] & ~0xfff) + offset);
-  if (!(pd[pdidx] & 0x1)) {
-    return;
-  }
-
-  uint64_t *pt = (uint64_t *)((pd[pdidx] & ~0xfff));
-  kfree_frame(pt);
-
-  bool empty = true;
-  for (int i = 0; i < 512; ++i) {
-    if (pd[i] & 0x1) {
-      empty = false;
-    }
-  }
-}
-
+// void free_page(void *vaddr) {
+//   uint64_t pml4idx = (uint64_t)vaddr >> 39 & 0x1ff;
+//   uint64_t pdptidx = ((uint64_t)vaddr >> 30) & 0x1ff;
+//   uint64_t pdidx = ((uint64_t)vaddr >> 21) & 0x1ff;
+//   uint64_t ptidx = ((uint64_t)vaddr >> 12) & 0x1ff;
+//
+//   if (!(pml4[pml4idx] & 0x1)) {
+//     return; // nothing to do
+//   }
+//
+//   uint64_t *pdpt = (uint64_t *)((pml4[pml4idx] & ~0xfff) + offset);
+//   if (!(pdpt[pdptidx] & 0x1)) {
+//     return;
+//   }
+//   uint64_t *pd = (uint64_t *)((pdpt[pdptidx] & ~0xfff) + offset);
+//   if (!(pd[pdidx] & 0x1)) {
+//     return;
+//   }
+//
+//   uint64_t *pt = (uint64_t *)((pd[pdidx] & ~0xfff));
+//   kfree_frame(pt);
+//
+//   bool empty = true;
+//   for (int i = 0; i < 512; ++i) {
+//     if (pd[i] & 0x1) {
+//       empty = false;
+//     }
+//   }
+// }
+//
 void paging_init() {
   offset = hhdm_request.response->offset;
   pml4 = (uint64_t *)((uint64_t)kalloc_frame() + offset);
