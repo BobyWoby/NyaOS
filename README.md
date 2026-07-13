@@ -1,11 +1,10 @@
 # NyaOS - :3 (WIP)
 
-Text rendering is currently assuming that the pixel format is 0x00RRGGBB
-
 ## TODO
 
 - [x] adding integer printing to printf
 - [x] interrupt/exception handling(very basic rn tho)
+    - Currently migrating from legacy PIC to APIC
 - [x] Page frame allocator
 - [x] global descriptor table
 - [x] PS/2 Controller Driver

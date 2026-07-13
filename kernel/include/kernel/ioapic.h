@@ -33,8 +33,8 @@ void find_madt() {
 
   for (int i = 0; i < entries; ++i) {
     XSDT_header_t *h = xsdt->otherSDTPtr[i];
-    if (!strncmp(h->signature, "ACPI", 4)) {
-      // parse madr
+    if (!strncmp(h->signature, "APIC", 4)) {
+      // parse madt
     }
   }
   printf("No MADT Found!\n");
