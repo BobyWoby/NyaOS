@@ -37,9 +37,8 @@ typedef struct lm_sysseg_desc {
 } lm_sysseg_desc_t;
 
 extern uint64_t *pml4;
-extern uint64_t *pdpt;
-extern uint64_t *pd;
-extern uint64_t *pt;
+
+extern uint64_t *heap; // vaddr of the heap in kernel space
 
 void gdt_init();
 
@@ -76,5 +75,6 @@ static inline void cpuGetMSR(uint32_t msr, uint32_t *lo, uint32_t *hi) {
 static inline void cpuSetMSR(uint32_t msr, uint32_t lo, uint32_t hi) {
   asm volatile("wrmsr" : : "a"(lo), "d"(hi), "c"(msr));
 }
+
 
 #endif

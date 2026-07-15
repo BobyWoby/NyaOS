@@ -5,6 +5,7 @@
 #include <kernel/limine.h>
 #include <kernel/pager.h>
 #include <kernel/pfa.h>
+#include <kernel/apic.h>
 #include <kernel/system.h>
 #include <kernel/tty.h>
 #include <stdbool.h>
@@ -33,18 +34,16 @@ void kernel_main() {
 
     enable_sse();
     gdt_init();
-    idt_init();
-
     terminal_initialize();
 
-    // gdt_init();
-    // // set up pfa here
-    // pfa_init();
-    //
-    // hcf();
-    printf("UwU Hallo %sUwu\nWelcome to NyaOS\n", ":3");
     pfa_init();
     paging_init();
+    idt_init();
+
+
+    // apic_init();
+
+    printf("UwU Hallo %sUwu\nWelcome to NyaOS\n", ":3");
     ps2_init();
     kb_enable_scanning();
 

@@ -111,6 +111,7 @@ void map_page(void *paddr, void *vaddr, unsigned int flags) {
 // }
 //
 void paging_init() {
+    __asm__ __volatile__ ("cli");
   offset = hhdm_request.response->offset;
   pml4 = (uint64_t *)((uint64_t)kalloc_frame() + offset);
 
@@ -119,7 +120,6 @@ void paging_init() {
   for (int i = 0; i < 512; ++i) {
     pml4[i] = 0;
   }
-
   for (char *p = &kernel_start_virtual; p < &kernel_end_virtual;
        p += PAGE_SIZE) {
     uint64_t paddr = (uint64_t)p - eaddr_request.response->virtual_base +
@@ -142,5 +142,5 @@ void paging_init() {
 
   __asm__ volatile("mov %0, %%cr3" : : "r"((uint64_t)pml4 - offset) : "memory");
 
-  printf("Paging initialized!\n");
+  // printf("Paging initialized!\n");
 }

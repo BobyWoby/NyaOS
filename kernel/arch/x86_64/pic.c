@@ -57,10 +57,10 @@ void pic_init() {
 }
 
 // 0b0010000 is the bit for an EOI request in ocw2
-void send_eoi(uint8_t irq) {
-    if (irq >= 8) outb(0x20, PIC_SECONDARY_CMDSTAT);
-    outb(0x20, PIC_PRIMARY_CMDSTAT);
-}
+// void send_eoi(uint8_t irq) {
+//     if (irq >= 8) outb(0x20, PIC_SECONDARY_CMDSTAT);
+//     outb(0x20, PIC_PRIMARY_CMDSTAT);
+// }
 
 void pic_disable() {
     outb(0xff, PIC_PRIMARY_INTRDATA);

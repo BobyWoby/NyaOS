@@ -42,6 +42,7 @@ stdio/printf.o \
 stdio/putchar.o \
 stdio/puts.o \
 stdlib/abort.o \
+stdlib/heap.o \
 
 HOSTEDOBJS=\
 $(ARCH_HOSTEDOBJS) \
