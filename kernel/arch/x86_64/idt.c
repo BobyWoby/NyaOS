@@ -71,6 +71,6 @@ void idt_init(){
     }
     __asm__ volatile("lidt %0" : : "m"(idtr)); // load new IDT
     // pic_init();
-    apic_init();
+    // apic_init();
     __asm__ volatile ("sti"); // set interrupt flag
 }

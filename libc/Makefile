@@ -38,6 +38,7 @@ string/memset.o \
 string/strlen.o \
 string/strcat.o \
 string/strcpy.o \
+string/strcmp.o \
 stdio/printf.o \
 stdio/putchar.o \
 stdio/puts.o \

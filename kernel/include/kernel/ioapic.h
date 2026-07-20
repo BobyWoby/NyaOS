@@ -21,23 +21,10 @@
 //
 // } __attribute__((packed)) XSDP_t;
 
-void find_madt() {
-  XSDP_t *acpi_tbl;
-  struct limine_rsdp_respons *rsdp_res = rsdp->response;
-  XSDP_t *rsdp = rsdp_res->address;
 
-  uint64_t xsdt_address = rsdp->xsdt_add;
-  uint64_t offset = hhdm->response->offset;
-  XSDT_t *xsdt = (xsdt_address + offset);
-  int entries = (xsdt->header.length - sizeof(xsdt->header)) / 8;
-
-  for (int i = 0; i < entries; ++i) {
-    XSDT_header_t *h = xsdt->otherSDTPtr[i];
-    if (!strncmp(h->signature, "APIC", 4)) {
-      // parse madt
-    }
-  }
-  printf("No MADT Found!\n");
-}
+void write_ioapic(const uintptr_t apic_base, const uint8_t offset, const uint32_t val);
+uint32_t read_ioapic(const uintptr_t apic_base, const uint8_t offset);
+void *find_table();
+void ioapic_init();
 
 #endif

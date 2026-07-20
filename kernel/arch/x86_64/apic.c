@@ -41,7 +41,7 @@ uintptr_t cpu_get_apic_base() {
 void cpu_write_io_apic(void* ioapicaddr, uint32_t reg, uint32_t val) {
     uint32_t volatile* ioapic = (uint32_t volatile*)ioapicaddr;
     ioapic[0] = (reg & 0xff); // set addr reg
-    ioapic[4] = value; // write to IOAPIC_BASE+0x10
+    ioapic[4] = val; // write to IOAPIC_BASE+0x10
 }
 
 uint32_t cpu_read_io_apic(void *ioapicaddr, uint32_t reg)

@@ -6,6 +6,7 @@
 #include <kernel/pager.h>
 #include <kernel/pfa.h>
 #include <kernel/apic.h>
+#include <kernel/ioapic.h>
 #include <kernel/system.h>
 #include <kernel/tty.h>
 #include <stdbool.h>
@@ -41,7 +42,8 @@ void kernel_main() {
     idt_init();
 
 
-    // apic_init();
+    apic_init();
+    ioapic_init();
 
     printf("UwU Hallo %sUwu\nWelcome to NyaOS\n", ":3");
     ps2_init();

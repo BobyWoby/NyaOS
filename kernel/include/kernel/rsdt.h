@@ -1,5 +1,5 @@
-#ifndef __IOAPIC_H
-#define __IOAPIC_H
+#ifndef __RSDT_H
+#define __RSDT_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -32,7 +32,36 @@ typedef struct XSDT_header {
 
 typedef struct XSDT {
   XSDT_header_t header;
-  // uint64_t otherSDTPtr[(header.length - sizeof(header)) / 8];
-} XSDT_t;
+  uint64_t otherSDTPtr[];
+}__attribute__((packed)) XSDT_t;
+
+
+typedef struct MADT {
+    XSDT_header_t hdr;
+    uint32_t lapic_addr;
+    uint32_t flags;
+}__attribute__((packed)) MADT_t ;
+
+typedef struct MADT_record{
+    uint8_t type;
+    uint8_t length;
+}__attribute__((packed)) madt_record_hdr_t;
+
+typedef struct madt_ioapic_t{
+    madt_record_hdr_t hdr;
+    uint8_t ioapic_id;
+    uint8_t reserved;
+    uint32_t ioapic_addr;
+    uint32_t gsi_base;
+}__attribute__((packed)) madt_ioapic_t;
+
+typedef struct madt_iso_t{
+    madt_record_hdr_t hdr;
+    uint8_t bus_src;
+    uint8_t irq_src;
+    uint32_t gsi;
+    uint16_t flags;
+}__attribute__((packed)) madt_iso_t;
+
 
 #endif
