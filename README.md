@@ -3,9 +3,8 @@
 ## TODO
 
 - [x] adding integer printing to printf
-- [x] interrupt/exception handling(very basic rn tho)
-    - Currently migrating from legacy PIC to APIC
-- [x] Page frame allocator
+- [x] interrupt/exception handling(APIC)
+- [x] Page frame allocator(bitmap)
 - [x] global descriptor table
 - [x] PS/2 Controller Driver
     - Proper Keyboard depends on the heap
@@ -14,6 +13,7 @@
     - TODO: multithreaded paging (has other dependencies though)
 - [ ] Heap
     - Current
+    - kinda wanna build a slab allocator
 
 ## Further out goals (in no particular order)
 

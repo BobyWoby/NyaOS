@@ -6,7 +6,7 @@
 #include <stdlib.h>
 
 #define PAGE_SIZE 4096
-#define MAGIC 0xDEADC0DE
+#define MAGIC 0xDEADBEEF
 
 // TODO: unocmment the macros
 // might change this later cuz this might run into limine structures
@@ -19,8 +19,13 @@ typedef struct node {
     uint32_t size;
 } __attribute__((packed)) heap_node_t;
 
+typedef struct used_node {
+    uint32_t magic;
+    uint32_t size;
+} __attribute__((packed)) used_block_t;
+
 uint64_t* heap;
-heap_node_t* head;
+heap_node_t* head; // head of the free list
 char *heap_end;
 
 
@@ -45,7 +50,7 @@ void free(void * p){
     // should prolly coalesce the list here
     heap_node_t *tmp = head;
     while(tmp != NULL){
-        if(tmp->size != 0xDEADC0DE){
+        if(tmp->size != MAGIC){
             
         }
         tmp = tmp->next;
@@ -57,16 +62,17 @@ void* malloc(size_t size) {
     // #if defined (__is_libk)
     heap_node_t *ptr = head;
     while(ptr != NULL){
-        if(ptr->size != 0xDEADC0DE && size < ptr->size){
-            // split the list here
-            ptr->size -= size;
+        if(ptr->size != MAGIC && size < ptr->size){
             heap_node_t *tmp = (heap_node_t *)((uint64_t)ptr + sizeof(heap_node_t) + size);
-            tmp->size = ptr->size - sizeof(heap_node_t) - size;
+            tmp->size = ptr->size - size - sizeof(heap_node_t);
             tmp->next = ptr->next;
-            ptr->next = tmp;
-            ptr->size = 0xDEADC0DE;
-
-            return (void *)((uint64_t)ptr + sizeof(heap_node_t));
+            if(ptr == head){
+                head = tmp;
+            }
+            used_block_t *header = (used_block_t *)ptr;
+            header->size = size;
+            header->magic = MAGIC;
+            return (void *)((uint64_t)header + sizeof(used_block_t));
         }
         ptr = ptr->next;
     }
