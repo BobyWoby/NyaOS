@@ -1,19 +1,17 @@
 # NyaOS - :3 (WIP)
-
-## TODO
-
+## Done
 - [x] adding integer printing to printf
 - [x] interrupt/exception handling(APIC)
 - [x] Page frame allocator(bitmap)
 - [x] global descriptor table
 - [x] PS/2 Controller Driver
     - Proper Keyboard depends on the heap
-- [ ] virtual memory mapping
-    - Paging setup, very primitive right now though
-    - TODO: multithreaded paging (has other dependencies though)
-- [ ] Heap
-    - Current
-    - kinda wanna build a slab allocator
+
+- [x] Paging setup, very primitive right now though
+## TODO
+
+- [ ] unmap_page implementation
+- [ ] Slab allocator for kmalloc
 
 ## Further out goals (in no particular order)
 
@@ -22,3 +20,4 @@
 - graphics?
 - filesystem (ZFS?)
 - multithreading
+    - multithreaded paging (has other dependencies though)
