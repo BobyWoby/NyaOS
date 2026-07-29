@@ -110,6 +110,14 @@ void free_page(void *vaddr) {
   }
 }
 
+void *phys_to_virt(uint64_t paddr){
+    return (void *)(paddr + offset);
+}
+
+uint64_t virt_to_phys(void *vaddr){
+    return ((uint64_t)vaddr - offset);
+}
+
 void paging_init() {
     __asm__ __volatile__ ("cli");
   offset = hhdm_request.response->offset;

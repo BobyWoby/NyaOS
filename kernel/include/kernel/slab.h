@@ -3,45 +3,46 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define PAGE_SIZE 4096
+#define SMALL_OBJ_SIZE PAGE_SIZE / 8.0
+
+typedef struct slab kmem_slab;
 typedef struct bufctl kmem_bufctl;
 
-typedef struct lslab{
-    struct lslab *prev, *next;
-    kmem_bufctl *freelist;
-    int refs, size;
-}kmem_slab;
+typedef enum {
+    EMPTY,
+    DELETED,
+    FULL
+} hash_state;
+
+typedef struct hashval{
+    kmem_bufctl *val; // bufctl
+    uint64_t key; // buffer addr 
+    hash_state state;
+}hash_val;
+
+typedef struct hashtable{
+    hash_val *buckets;
+    size_t size, num_buckets;
+} slab_ht ;
+
 
 
 typedef struct bufctl{
+    void *buf;
     kmem_slab *back; // backlink to parent slab
     struct bufctl *next; // next freelist entry
-    void *buf;
 } kmem_bufctl;
 
-typedef struct hashtable{
-    size_t size;
-    // maps ppn to bufctl
-    kmem_bufctl *buckets;
-} slab_ht ;
+typedef struct slab{
+    struct slab *prev, *next;
+    kmem_bufctl *freelist;
+    int refs;
+}kmem_slab;
 
-typedef struct lcache{
+typedef struct cache{
     kmem_slab *head, *tail, *fl_ptr;
     slab_ht *buf2bufctl;
-} lscache_t;
-
-typedef struct buf_node{
-    void *mem;
-    struct buf_node *next;
-} sbufctl;
-
-typedef struct sslab{
-   sbufctl *head; 
-   int refcnt;
-   struct sslab *next, *prev;
-}kmem_sslab;
-
-typedef struct scache{
-    kmem_sslab *head, *tail, *fl_ptr;
-}sscache_t;
-
+    size_t size; // object size
+} kmem_cache;
 #endif
