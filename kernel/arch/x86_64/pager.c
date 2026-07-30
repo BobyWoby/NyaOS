@@ -17,6 +17,21 @@ static uint32_t *page_bm; // bitmap of virtual pages
 
 uint64_t offset;
 
+static void pbm_set(void *vaddr){
+    uint64_t i = (uint64_t)vaddr;
+    page_bm[i >> 5] |= (1u << (i & 0x1ff));
+}
+
+static void pbm_clear(void *vaddr){
+    uint64_t i = (uint64_t)vaddr;
+    page_bm[i >> 5] &= ~(1u << (i & 0x1ff));
+}
+
+static int pbm_test(void *vaddr){
+    uint64_t i = (uint64_t)vaddr;
+    return page_bm[i >> 5] & (1u << (i & 0x1ff));
+}
+
 void zero_table(uint64_t paddr) {
   uint64_t *vaddr = (uint64_t *)(paddr + offset);
   for (int i = 0; i < 512; ++i) {
@@ -41,7 +56,13 @@ void map_page_2m(uint64_t paddr, uint64_t vaddr, uint64_t flags) {
     zero_table(f);
     pdpt[pdptidx] = f | 0x3;
   }
+
   uint64_t *pd = (uint64_t *)((pdpt[pdptidx] & ~0xfffULL) + offset);
+
+  // idk if this is correct quite yet
+  for(void *i = (void *)vaddr; i < (void *)vaddr + (2 << 20); i += PAGE_SIZE){
+      pbm_set(i);
+  }
 
   pd[pdidx] =
       (paddr & ~0x1fffffULL) | flags | 0x80 | 0x3; // PS | present | writable
@@ -76,6 +97,7 @@ void map_page(void *paddr, void *vaddr, unsigned int flags) {
   }
 
   uint64_t *pt = (uint64_t *)((pd[pdidx] & ~0xfff) + offset);
+  pbm_set(vaddr);
   // if (!(pt[ptidx] & 0x1)) {
   //   pt[ptidx] = kalloc_frame() | 0x1;
   // }
@@ -103,6 +125,7 @@ void free_page(void *vaddr) {
 
   uint64_t *pt = (uint64_t *)((pd[pdidx] & ~0xfff));
   kfree_frame(pt);
+  pbm_clear(vaddr);
 
   bool empty = true;
   for (int i = 0; i < 512; ++i) {
@@ -114,7 +137,6 @@ void free_page(void *vaddr) {
 
 // allocate num_pages of virtually contiguous pages of memory
 void *kalloc_pages(size_t num_pages) {
-  //
   return NULL;
 }
 
@@ -156,3 +178,4 @@ void paging_init() {
 
   // printf("Paging initialized!\n");
 }
+
