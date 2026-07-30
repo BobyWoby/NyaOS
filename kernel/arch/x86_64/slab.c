@@ -12,6 +12,11 @@ size_t hash_buf(slab_ht *ht, uint64_t buf_addr) {
   return (size_t)hash((uint64_t)buf_addr, ht->size);
 }
 
+slab_ht* ht_create(){
+    return NULL;
+}
+
+
 kmem_bufctl *hash_get(slab_ht *ht, uint64_t key) {
   size_t hash = hash_buf(ht, key);
   while (true) {
@@ -51,9 +56,14 @@ void kmem_cache_grow(kmem_cache *cache) {
     new_slab->freelist = pstart;
     size_t eff_size = cache->size + sizeof(kmem_bufctl);
 
-    for (void *p = pstart; p < (void *)new_slab; p += eff_size) {
-      void **tmp = p + cache->size;
-      *tmp = p + eff_size;
+        for(void *p = pstart; p < (void *)new_slab; p += eff_size){
+            void **tmp = p + cache->size;
+            *tmp = p + eff_size;
+        }
+        // add the new_slab slab to the cache's free list
+        _add_slab(cache, new_slab);
+    }else{
+        // large object cache
     }
     // add the new_slab slab to the cache's free list
     _add_slab(cache, new_slab);
