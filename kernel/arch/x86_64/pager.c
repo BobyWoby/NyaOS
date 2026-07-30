@@ -13,6 +13,8 @@ extern char kernel_start_physical;
 extern char kernel_start_virtual;
 extern char kernel_end_virtual;
 
+static uint32_t *page_bm; // bitmap of virtual pages
+
 uint64_t offset;
 
 void zero_table(uint64_t paddr) {
@@ -110,16 +112,18 @@ void free_page(void *vaddr) {
   }
 }
 
-void *phys_to_virt(uint64_t paddr){
-    return (void *)(paddr + offset);
+// allocate num_pages of virtually contiguous pages of memory
+void *kalloc_pages(size_t num_pages) {
+  //
+  return NULL;
 }
 
-uint64_t virt_to_phys(void *vaddr){
-    return ((uint64_t)vaddr - offset);
-}
+void *phys_to_virt(uint64_t paddr) { return (void *)(paddr + offset); }
+
+uint64_t virt_to_phys(void *vaddr) { return ((uint64_t)vaddr - offset); }
 
 void paging_init() {
-    __asm__ __volatile__ ("cli");
+  __asm__ __volatile__("cli");
   offset = hhdm_request.response->offset;
   pml4 = (uint64_t *)((uint64_t)kalloc_frame() + offset);
 

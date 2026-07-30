@@ -1,12 +1,12 @@
 // #include <kernel/multiboot.h>
 #include <drivers/keyboard.h>
 #include <drivers/ps2.h>
+#include <kernel/apic.h>
 #include <kernel/idt.h>
+#include <kernel/ioapic.h>
 #include <kernel/limine.h>
 #include <kernel/pager.h>
 #include <kernel/pfa.h>
-#include <kernel/apic.h>
-#include <kernel/ioapic.h>
 #include <kernel/system.h>
 #include <kernel/tty.h>
 #include <stdbool.h>
@@ -14,41 +14,38 @@
 #include <stdint.h>
 #include <stdio.h>
 
-__attribute__((used, section(".limine_requests"))) static volatile uint64_t limine_base_revision[] =
-    LIMINE_BASE_REVISION(6);
+__attribute__((used, section(".limine_requests"))) static volatile uint64_t
+    limine_base_revision[] = LIMINE_BASE_REVISION(6);
 
-__attribute__((
-    used,
-    section(".limine_requests_start"))) static volatile uint64_t limine_requests_start_marker[] =
-    LIMINE_REQUESTS_START_MARKER;
+__attribute__((used,
+               section(".limine_requests_start"))) static volatile uint64_t
+    limine_requests_start_marker[] = LIMINE_REQUESTS_START_MARKER;
 
-__attribute__((
-    used, section(".limine_requests_end"))) static volatile uint64_t limine_requests_end_marker[] =
-    LIMINE_REQUESTS_END_MARKER;
+__attribute__((used, section(".limine_requests_end"))) static volatile uint64_t
+    limine_requests_end_marker[] = LIMINE_REQUESTS_END_MARKER;
 
 extern void enable_sse();
 
 void kernel_main() {
-    if (LIMINE_BASE_REVISION_SUPPORTED(limine_base_revision) == false) {
-        hcf();
-    }
-
-    enable_sse();
-    gdt_init();
-    terminal_initialize();
-
-    pfa_init();
-    paging_init();
-    idt_init();
-
-
-    apic_init();
-    ioapic_init();
-
-    printf("UwU Hallo %sUwu\nWelcome to NyaOS\n", ":3");
-    ps2_init();
-    kb_enable_scanning();
-
-    // spin forever ig
+  if (LIMINE_BASE_REVISION_SUPPORTED(limine_base_revision) == false) {
     hcf();
+  }
+
+  enable_sse();
+  gdt_init();
+  terminal_initialize();
+
+  pfa_init();
+  paging_init();
+  idt_init();
+
+  apic_init();
+  ioapic_init();
+
+  printf("UwU Hallo %sUwu\nWelcome to NyaOS\n", ":3");
+  ps2_init();
+  kb_enable_scanning();
+
+  // spin forever ig
+  hcf();
 }
