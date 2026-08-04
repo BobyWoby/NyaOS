@@ -123,4 +123,9 @@ void ioapic_init() {
 
     // Route PS/2 keyboard: ISA IRQ 1 -> vector 0x21.
     ioapic_route(ioapic_base, gsi_base, irq_gsi[1], irq_flags[1], 0x21, lapic_id);
+
+    // Route Serial Ports: ISA IRQ 3 -> vector 0x22
+    // Route Serial Ports: ISA IRQ 4 -> vector 0x23
+    ioapic_route(ioapic_base, gsi_base, irq_gsi[3], irq_flags[3], 0x22, lapic_id);
+    ioapic_route(ioapic_base, gsi_base, irq_gsi[4], irq_flags[4], 0x23, lapic_id);
 }

@@ -1,5 +1,6 @@
 #include <kernel/isr.h>
 #include <drivers/keyboard.h>
+#include <drivers/serial.h>
 #include <kernel/apic.h>
 #include <kernel/io.h>
 #include <stddef.h>
@@ -22,6 +23,7 @@ void exception_handler(registers_t* regs) {
     // Hardware IRQs (remapped to 0x20-0x2f): dispatch quietly and return.
     if (regs->vector >= 0x20 && regs->vector <= 0x2f) {
         if (regs->vector == 0x21) handle_keyboard();
+        if(regs->vector == 0x22 || regs->vector == 0x23) handle_serial(regs->vector);
         // send_eoi(regs->vector - 0x20);
         send_eoi();
         return;

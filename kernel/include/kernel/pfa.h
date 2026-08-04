@@ -3,11 +3,12 @@
 #include <stddef.h>
 #include <stdint.h>
 
-typedef void* pageframe_t;
+typedef void *pageframe_t;
 
 void pfa_init();
 pageframe_t kalloc_frame_int();
 pageframe_t kalloc_frame();
+pageframe_t kalloc_frames(size_t frames);
 void kfree_frame(pageframe_t a);
 uint64_t mem_high();
 
