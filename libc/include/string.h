@@ -4,6 +4,7 @@
 #include <sys/cdefs.h>
 
 #include <stddef.h>
+#define ALIGN_UP(num, align) (((num) + ((align) - 1)) & ~((align) - 1))
 
 #ifdef __cplusplus
 extern "C" {
