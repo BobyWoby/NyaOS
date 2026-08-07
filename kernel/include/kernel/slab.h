@@ -4,7 +4,8 @@
 #include <stdint.h>
 
 #define PAGE_SIZE 4096
-#define SMALL_OBJ_SIZE PAGE_SIZE / 8.0
+#define SMALL_OBJ_SIZE PAGE_SIZE / BUFS_PER_CACHE
+#define BUFS_PER_CACHE 8.0
 
 typedef struct slab kmem_slab;
 typedef struct bufctl kmem_bufctl;

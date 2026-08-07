@@ -5,6 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+
+void *kmalloc(size_t size);
 uint64_t hash(uint64_t in, int sz) { return in % sz; }
 
 size_t hash_buf(slab_ht *ht, uint64_t buf_addr) {
@@ -29,6 +31,10 @@ kmem_bufctl *hash_get(slab_ht *ht, uint64_t key) {
 }
 
 void slab_alloc_init() {}
+
+kmem_cache* kmem_cache_create(size_t size, int align){
+    return NULL;
+}
 
 // append slab to the end of the cache
 void _add_slab(kmem_cache *cache, kmem_slab *slab) {
@@ -63,6 +69,16 @@ void kmem_cache_grow(kmem_cache *cache) {
     // large object cache
     void *pstart =
         phys_to_virt((uint64_t)kalloc_frames(cache->size * 10 / PAGE_SIZE));
+
+    // this can prolly be swapped with kmem_cache_alloc instead w/ a global kmem_slab cache 
+    new_slab = (kmem_slab *)kmalloc(sizeof(kmem_slab)); 
+    new_slab->next = new_slab->prev = NULL;
+    new_slab->refs = 0;
+    
+    for(int i = 0; i < BUFS_PER_CACHE; ++i){
+        kmem_bufctl *bufctl  = (kmem_bufctl*)kmalloc(sizeof(kmem_bufctl));
+        bufctl->back = new_slab;
+    }
   }
   // add the new_slab slab to the cache's free list
   _add_slab(cache, new_slab);
@@ -72,7 +88,6 @@ void kmem_cache_grow(kmem_cache *cache) {
 void *kmem_cache_reap(kmem_cache *cache) { return NULL; }
 
 void *kmem_cache_alloc(kmem_cache *cache) {
-  //
   return NULL;
 }
 
