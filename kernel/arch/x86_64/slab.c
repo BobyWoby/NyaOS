@@ -6,8 +6,15 @@
 #include <stdint.h>
 #include <string.h>
 
+
+// object cache of size kmem_cache + 2 * kmem_slab
+static kmem_cache cache_cache;
+kmem_cache caches[12]; // statically pre-built caches in powers of 2
+
 void* kmalloc(size_t size);
 uint64_t hash(uint64_t in, int sz) { return in % sz; }
+
+void* kmem_cache_alloc(kmem_cache* cache);
 
 size_t hash_buf(slab_ht* ht, uint64_t buf_addr) {
     buf_addr = buf_addr >> 12;  // get the page number of the buffer
@@ -32,7 +39,29 @@ kmem_bufctl* hash_get(slab_ht* ht, uint64_t key) {
 
 void slab_alloc_init() {}
 
-kmem_cache* kmem_cache_create(size_t size, int align) { return NULL; }
+kmem_cache* kmem_cache_create(char *name, size_t size, int align) { 
+    // create the cache
+    kmem_cache* cache = kmem_cache_alloc(&cache_cache);
+    cache->name = name;
+    cache->size = size;
+    cache->align = align;
+
+    cache->head = (kmem_slab *)(cache + 1); 
+    cache->tail = (kmem_slab *)(cache + 1) + 1;
+    cache->head->prev = NULL;
+    cache->head->next = cache->tail;
+    cache->head->freelist = NULL;
+    cache->head->refs = 0;
+
+    cache->tail->prev = cache->head;
+    cache->tail->next = NULL;
+    cache->tail->freelist = NULL;
+    cache->tail->refs = 0;
+
+    cache->fl_ptr = cache->tail;
+
+    return NULL;
+}
 
 // append slab to the end of the cache
 void _add_slab(kmem_cache* cache, kmem_slab* slab) {
@@ -46,10 +75,19 @@ void _add_slab(kmem_cache* cache, kmem_slab* slab) {
     }
 }
 
+// unlinks a slab from it's freelist
+void _rm_slab(kmem_slab *slab){
+    slab->prev->next = slab->next;
+    slab->next->prev = slab->prev;
+    slab->next = NULL;
+    slab->prev = NULL;
+}
+
 // grow cache by one slab
+// TODO: add alignment to the slabs
 void kmem_cache_grow(kmem_cache* cache) {
     kmem_slab* new_slab;
-    if (cache->size < SMALL_OBJ_SIZE) {
+    if (cache->size <= SMALL_OBJ_SIZE) {
         void* pstart = phys_to_virt((uint64_t)kalloc_frame());
 
         uintptr_t slab_addr = (uintptr_t)(pstart + PAGE_SIZE - sizeof(kmem_slab));
@@ -67,6 +105,7 @@ void kmem_cache_grow(kmem_cache* cache) {
             void** tmp = p + cache->size;
             *tmp = p + eff_size;
         }
+
         void** tmp = (p - sizeof(void*));
         *tmp = NULL;
     } else {
@@ -87,11 +126,11 @@ void kmem_cache_grow(kmem_cache* cache) {
         // TODO: rewrite this loop to be cleaner
         for (int i = 0; i < BUFS_PER_CACHE; ++i) {
             kmem_bufctl* buf = buf_start + i;
-            buf->buf = pstart + (i * cache->size);
+            buf->buf = (void *)((uintptr_t)pstart + (i * cache->size));
             buf->next = NULL;
             if (i < BUFS_PER_CACHE - 1) {
                 // this should be right?
-                buf->next = (kmem_bufctl*)((uint64_t)buf + sizeof(kmem_bufctl));
+                buf->next = (kmem_bufctl*)((uintptr_t)buf + sizeof(kmem_bufctl));
             }
             buf->back = new_slab;
         }
@@ -103,18 +142,49 @@ void kmem_cache_grow(kmem_cache* cache) {
 // free all unused slabs
 void* kmem_cache_reap(kmem_cache* cache) { return NULL; }
 
-void* kmem_cache_alloc(kmem_cache* cache) { return NULL; }
+void kmem_cache_free(kmem_cache *cache, void *buf){
+    void *mem;
+    kmem_slab *slab;
+    if(cache->size < SMALL_OBJ_SIZE){
+    }else{
+    }
+}
+
+void* kmem_cache_alloc(kmem_cache* cache) {
+    // if there's no free slab
+    if(cache->fl_ptr == NULL || cache->fl_ptr == cache->tail){
+        kmem_cache_grow(cache);
+    }
+    kmem_slab *slab = cache->fl_ptr;
+    
+    // if this is a small object, the bufctl object is 
+    if(cache->size <= SMALL_OBJ_SIZE){
+        void *res = (void *)slab->freelist;
+        slab->freelist = (kmem_bufctl *)((uintptr_t)res + cache->size);
+        ++(slab->refs);
+        return res;
+    }else{
+        kmem_bufctl *bufctl = slab->freelist; 
+        slab->freelist = bufctl->next;
+        ++(slab->refs);
+        return bufctl->buf;
+    }
+
+    return NULL;
+}
 
 void* kmalloc(size_t size) {
     int idx;
-    for (idx = 0; idx < 12 && size > cache_sizes[idx]; ++idx) {
+    for (idx = 0; idx < 12 && size > (1 << idx); ++idx) {
     }
     if (idx >= 12) {
         // gonna have to do smt else here bc its too big
         // create a new cache?
     } else {
-        return kmem_cache_alloc(caches[idx]);
+        return kmem_cache_alloc(&caches[idx]);
     }
 }
 
-void kfree(void* ptr) {}
+void kfree(void* ptr) {
+    // gonna have to build a lookup table for ts :(
+}
