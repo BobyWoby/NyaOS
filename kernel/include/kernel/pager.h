@@ -7,7 +7,7 @@
 
 void paging_init();
 void map_page(void *paddr, void *vaddr, unsigned int flags);
-void free_page();
+void free_page(void *vaddr);
 void *phys_to_virt(uint64_t paddr);
 uint64_t virt_to_phys(void *vaddr);
 
