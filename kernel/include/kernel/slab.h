@@ -16,10 +16,6 @@ typedef enum {
     FULL
 } hash_state;
 
-typedef struct header{
-    uint32_t magic; // 0xDEADBEEF
-    uint32_t size;
-} kmem_buf_hdr;
 
 typedef struct hashval{
     kmem_bufctl *val; // bufctl
@@ -41,7 +37,7 @@ typedef struct bufctl{
 typedef struct slab{
     struct slab *prev, *next;
     kmem_bufctl *freelist;
-    int refs;
+    int refs, buf_cnt;
 }kmem_slab;
 
 typedef struct cache{

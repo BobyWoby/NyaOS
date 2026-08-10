@@ -8,7 +8,8 @@
 
 
 // object cache of size kmem_cache + 2 * kmem_slab
-static kmem_cache cache_cache;
+static kmem_cache cache_cache, slab_cache;
+
 kmem_cache caches[12]; // statically pre-built caches in powers of 2
 
 void* kmalloc(size_t size);
@@ -104,7 +105,10 @@ void kmem_cache_grow(kmem_cache* cache) {
         new_slab->refs = 0;
         new_slab->freelist = pstart;
 
+
         size_t eff_size = cache->size + sizeof(kmem_bufctl);
+
+        new_slab->buf_cnt = (PAGE_SIZE - sizeof(kmem_slab)) / eff_size;
 
         void* p;
         for (p = pstart; p + eff_size < (void*)new_slab; p += eff_size) {
@@ -116,6 +120,7 @@ void kmem_cache_grow(kmem_cache* cache) {
         *tmp = NULL;
     } else {
         // large object cache
+        // TODO: Fix the internal fragmentation and allow for variable BUFS_PER_SLAB
         size_t bytes = cache->size * BUFS_PER_SLAB;
         size_t frames = (bytes + PAGE_SIZE - 1) / PAGE_SIZE;
         void* pstart =
@@ -129,12 +134,14 @@ void kmem_cache_grow(kmem_cache* cache) {
         kmem_bufctl* buf_start = (kmem_bufctl*)(new_slab + 1);
         new_slab->freelist = buf_start;
 
+        new_slab->buf_cnt = frames * PAGE_SIZE / cache->size;
+
         // TODO: rewrite this loop to be cleaner
-        for (int i = 0; i < BUFS_PER_SLAB; ++i) {
+        for (int i = 0; i < new_slab->buf_cnt; ++i) {
             kmem_bufctl* buf = buf_start + i;
             buf->buf = (void *)((uintptr_t)pstart + (i * cache->size));
             buf->next = NULL;
-            if (i < BUFS_PER_SLAB - 1) {
+            if (i < new_slab->buf_cnt - 1) {
                 // this should be right?
                 buf->next = (kmem_bufctl*)((uintptr_t)buf + sizeof(kmem_bufctl));
             }
@@ -146,7 +153,16 @@ void kmem_cache_grow(kmem_cache* cache) {
 }
 
 // free all unused slabs
-void* kmem_cache_reap(kmem_cache* cache) { return NULL; }
+void kmem_cache_reap(kmem_cache* cache) {
+    kmem_slab *tmp = cache->fl_ptr;
+    while(tmp != NULL && tmp != cache->tail && tmp->refs > 0){
+        tmp = tmp->next;
+    }
+    while(tmp != NULL && tmp != cache->tail){
+        // free this slab
+        tmp = tmp->next;
+    }
+}
 
 void kmem_cache_free(kmem_cache *cache, void *buf){
     void *mem;
@@ -169,14 +185,15 @@ void kmem_cache_free(kmem_cache *cache, void *buf){
             // free the page
             free_page((void *)page);
         }
-        if(slab->refs == BUFS_PER_SLAB - 1){
+
+        if(slab->refs == slab->buf_cnt - 1){
             // move the slab to the front of the cache's freelist
             _rm_slab(slab);
             _insert_slab(cache->fl_ptr, slab);
             cache->fl_ptr = slab;
         }
     }else{
-        // need a hash table here
+        // need the hash table here but I lowk am too stupid to implement it rn
     }
 }
 
@@ -185,7 +202,7 @@ void* kmem_cache_alloc(kmem_cache* cache) {
     if(cache->fl_ptr == NULL || cache->fl_ptr == cache->tail){
         kmem_cache_grow(cache);
     }
-    if(cache->fl_ptr->refs == BUFS_PER_SLAB){
+    if(cache->fl_ptr->refs == cache->fl_ptr->buf_cnt){
         kmem_cache_grow(cache);
     }
 
