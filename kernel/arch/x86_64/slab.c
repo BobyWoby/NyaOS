@@ -83,6 +83,7 @@ bool ht_erase(slab_ht *ht, uintptr_t key){
     }
     ht->buckets[hash].state = DELETED;
     --ht->size;
+    return true;
 }
 
 void *kmalloc(size_t size);
