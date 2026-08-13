@@ -19,13 +19,13 @@ typedef enum {
 
 typedef struct hashval{
     kmem_bufctl *val; // bufctl
-    uint64_t key; // buffer addr 
+    uintptr_t key; // buffer addr 
     hash_state state;
 }hash_val;
 
 typedef struct hashtable{
     hash_val *buckets;
-    size_t size, num_buckets;
+    size_t size, capacity;
 } slab_ht ;
 
 typedef struct bufctl{
@@ -45,5 +45,6 @@ typedef struct cache{
     slab_ht *buf2bufctl;
     char *name;
     size_t size, align; // object size
+    kmem_slab hslab, tslab;
 } kmem_cache;
 #endif

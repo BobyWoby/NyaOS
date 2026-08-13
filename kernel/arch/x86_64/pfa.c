@@ -123,6 +123,31 @@ bool test_range(const uint32_t *start, const uint32_t *end, unsigned int s_bit,
   }
   return true;
 }
+
+void clear_range(size_t start, size_t end) {
+  if (start > end)
+    return;
+
+  size_t start_word = start >> 5;
+  size_t start_bit = start & 0x1f;
+  size_t end_word = end >> 5;
+  size_t end_bit = end & 0x1f;
+
+  if (start_word == end_word) {
+    uint32_t mask = (~0UL << start_bit) & (~0UL >> (31 - end_bit));
+    bitmap[start_word] &= ~mask;
+    return;
+  }
+
+  bitmap[start_word] &= ~(~0ULL << start_bit);
+
+  if (end_word > start_word + 1) {
+    memset(&bitmap[start_word + 1], 0x0,
+           (end_word - start_word - 1) * sizeof(uint32_t));
+  }
+
+  bitmap[end_word] &= ~(~0ULL >> (31 - end_bit));
+}
 void set_range(size_t start, size_t end) {
   if (start > end)
     return;
@@ -203,6 +228,7 @@ pageframe_t kalloc_frame() {
       if (pre_frames[i] == NULL) {
         // TODO: PANIC
         printf("out of frames");
+        return NULL;
       }
     }
     pframe = 0;
@@ -213,4 +239,13 @@ pageframe_t kalloc_frame() {
   return (ret);
 }
 
+void zero_frames(uintptr_t fstart, size_t frames){
+    memset((void *)fstart, 0, frames * PAGE_SIZE);
+}
+
 void kfree_frame(pageframe_t a) { bm_clear((uint64_t)a / PAGE_SIZE); }
+
+void kfree_frames(pageframe_t a, size_t frames) {
+    int idx = (uint64_t)a / PAGE_SIZE;
+    clear_range(idx, idx + frames); 
+}

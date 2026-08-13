@@ -10,6 +10,7 @@ pageframe_t kalloc_frame_int();
 pageframe_t kalloc_frame();
 pageframe_t kalloc_frames(size_t frames);
 void kfree_frame(pageframe_t a);
+void kfree_frames(pageframe_t a, size_t frames);
 uint64_t mem_high();
 
 #endif
