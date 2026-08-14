@@ -169,8 +169,7 @@ void kmem_cache_grow(kmem_cache *cache) {
     *tmp = NULL;
   } else {
     // large object cache
-    // TODO: Fix the internal fragmentation and allow for variable BUFS_PER_SLAB
-    size_t bytes = cache->size * BUFS_PER_SLAB;
+    size_t bytes = cache->size * BUFS_PER_SLAB; // at least this many buffers
     size_t frames = (bytes + PAGE_SIZE - 1) / PAGE_SIZE;
     void *pstart = phys_to_virt((uint64_t)kalloc_frames(frames));
 
@@ -252,6 +251,7 @@ void kmem_cache_free(kmem_cache *cache, void *buf) {
       cache->fl_ptr = slab;
     }
   } else {
+      // TODO: Implement
     // need the hash table here but I lowk am too stupid to implement it rn
   }
 }
