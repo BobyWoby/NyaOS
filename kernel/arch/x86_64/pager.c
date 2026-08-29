@@ -115,9 +115,9 @@ void *kalloc_pages(size_t num_pages) {
   return NULL;
 }
 
-void *phys_to_virt(uint64_t paddr) { return (void *)(paddr + offset); }
+uintptr_t phys_to_virt(uintptr_t paddr) { return (paddr + offset); }
 
-uint64_t virt_to_phys(void *vaddr) { return ((uint64_t)vaddr - offset); }
+uintptr_t virt_to_phys(uintptr_t vaddr) { return (vaddr - offset); }
 
 void paging_init() {
   __asm__ __volatile__("cli");

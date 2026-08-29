@@ -9,243 +9,230 @@
 
 #define PAGE_SIZE 0x1000
 static uint32_t npages;
-static uint32_t *bitmap;
+static uint32_t* bitmap;
 static uint64_t bm_paddr;
 
-extern char endkernel; // only care abt the address of this
+extern char endkernel;  // only care abt the address of this
 
 // it's lowk flipped, bc left shifting increases the actual bit were at, which
 // is logically moving to the 'right' in the bit map 31, 30, ..., 3, 2, 1, 0 //
 // first element of the bitmap looks like this
-static inline void bm_set(uint32_t i) {
-  bitmap[i >> 5] |= (1u << (i & 0b11111));
-}
-static inline void bm_clear(uint32_t i) {
-  bitmap[i >> 5] &= ~(1u << (i & 0b11111));
-}
-static inline int bm_test(uint32_t i) {
-  return bitmap[i >> 5] & (1u << (i & 0b11111));
-}
+static inline void bm_set(uint32_t i) { bitmap[i >> 5] |= (1u << (i & 0b11111)); }
+static inline void bm_clear(uint32_t i) { bitmap[i >> 5] &= ~(1u << (i & 0b11111)); }
+static inline int bm_test(uint32_t i) { return bitmap[i >> 5] & (1u << (i & 0b11111)); }
 
 pageframe_t pre_frames[20];
 
 uint64_t mem_high() {
-  struct limine_memmap_response *mmap = mmap_request.response;
-  unsigned int high = 0;
-  for (uint64_t i = 0; i < mmap->entry_count; ++i) {
-    struct limine_memmap_entry *entry = mmap->entries[i];
+    struct limine_memmap_response* mmap = mmap_request.response;
+    unsigned int high = 0;
+    for (uint64_t i = 0; i < mmap->entry_count; ++i) {
+        struct limine_memmap_entry* entry = mmap->entries[i];
 
-    if (entry->type == LIMINE_MEMMAP_USABLE &&
-        entry->base + entry->length > high) {
-      high = entry->base + entry->length;
+        if (entry->type == LIMINE_MEMMAP_USABLE && entry->base + entry->length > high) {
+            high = entry->base + entry->length;
+        }
     }
-  }
-  return high;
+    return high;
 }
 
 void free_available_memory() {
-  struct limine_memmap_response *mmap = mmap_request.response;
-  for (int i = 0; i < mmap->entry_count; i++) {
-    struct limine_memmap_entry *entry = mmap->entries[i];
-    if (entry->type == LIMINE_MEMMAP_USABLE) {
-      for (uint64_t m = entry->base;
-           m + PAGE_SIZE < entry->base + entry->length; m += PAGE_SIZE) {
-        bm_clear(m / PAGE_SIZE);
-      }
+    struct limine_memmap_response* mmap = mmap_request.response;
+    for (int i = 0; i < mmap->entry_count; i++) {
+        struct limine_memmap_entry* entry = mmap->entries[i];
+        if (entry->type == LIMINE_MEMMAP_USABLE) {
+            for (uint64_t m = entry->base; m + PAGE_SIZE < entry->base + entry->length;
+                 m += PAGE_SIZE) {
+                bm_clear(m / PAGE_SIZE);
+            }
+        }
     }
-  }
 }
 
 uintptr_t bitmap_addr(uint64_t bitmap_size) {
-  uint64_t offset = hhdm_request.response->offset;
-  struct limine_memmap_response *mmap = mmap_request.response;
-  for (int i = 0; i < mmap->entry_count; i++) {
-    struct limine_memmap_entry *entry = mmap->entries[i];
-    if (entry->type == LIMINE_MEMMAP_USABLE && entry->length > bitmap_size) {
-      bm_paddr = entry->base;
-      return entry->base + offset;
+    uint64_t offset = hhdm_request.response->offset;
+    struct limine_memmap_response* mmap = mmap_request.response;
+    for (int i = 0; i < mmap->entry_count; i++) {
+        struct limine_memmap_entry* entry = mmap->entries[i];
+        if (entry->type == LIMINE_MEMMAP_USABLE && entry->length > bitmap_size) {
+            bm_paddr = entry->base;
+            return entry->base + offset;
+        }
     }
-  }
-  // TODO: PANIC
+    // TODO: PANIC
 }
 
 void pfa_init() {
-  npages = mem_high() / PAGE_SIZE;
-  uint64_t bitmap_size = ((npages + 31) / 32) * sizeof(uint32_t);
+    npages = mem_high() / PAGE_SIZE;
+    uint64_t bitmap_size = ((npages + 31) / 32) * sizeof(uint32_t);
 
-  // uintptr_t addr =
-  bitmap = (uint32_t *)bitmap_addr(bitmap_size);
+    // uintptr_t addr =
+    bitmap = (uint32_t*)bitmap_addr(bitmap_size);
 
-  // set all the pages to be used by default
-  for (int i = 0; i < ((npages + 31) >> 5); ++i) {
-    bitmap[i] = 0xffffffff;
-  }
+    // set all the pages to be used by default
+    for (int i = 0; i < ((npages + 31) >> 5); ++i) {
+        bitmap[i] = 0xffffffff;
+    }
 
-  free_available_memory();
+    free_available_memory();
 
-  uint64_t first = bm_paddr / PAGE_SIZE;
-  uint64_t count = (bitmap_size + PAGE_SIZE - 1) / PAGE_SIZE;
-  for (uint64_t i = first; i < first + count; ++i) {
-    bm_set(i);
-  }
+    uint64_t first = bm_paddr / PAGE_SIZE;
+    uint64_t count = (bitmap_size + PAGE_SIZE - 1) / PAGE_SIZE;
+    for (uint64_t i = first; i < first + count; ++i) {
+        bm_set(i);
+    }
 
-  bm_set(0); // mark page 0 as used
+    bm_set(0);  // mark page 0 as used
 
-  // mark everything up to end-of-bitmap as used, might not be necessary
-  // uint32_t reserved = ((addr + bitmap_size) + PAGE_SIZE - 1) / PAGE_SIZE;
-  // for (uint32_t i = 0; i < reserved; ++i) {
-  //   bm_set(i);
-  // }
+    // mark everything up to end-of-bitmap as used, might not be necessary
+    // uint32_t reserved = ((addr + bitmap_size) + PAGE_SIZE - 1) / PAGE_SIZE;
+    // for (uint32_t i = 0; i < reserved; ++i) {
+    //   bm_set(i);
+    // }
 }
 
 // assumes start <= end
-bool test_range(const uint32_t *start, const uint32_t *end, unsigned int s_bit,
+bool test_range(const uint32_t* start, const uint32_t* end, unsigned int s_bit,
                 unsigned int e_bit) {
-  printf("invalid start and end for test_range\n");
-  if (start == end) {
-    uint32_t mask = ~((1U << s_bit) - 1);
-    mask &= ((1U << e_bit) - 1);
-    return !(*start & mask);
-  }
-  const uint32_t *ptr = start;
-  uint32_t mask = ~((1U << s_bit) - 1);
-  if (*ptr & mask) {
-    return false;
-  }
-  while (ptr < end) {
-    if (*(++ptr) && ptr != end) {
-      return false;
+    printf("invalid start and end for test_range\n");
+    if (start == end) {
+        uint32_t mask = ~((1U << s_bit) - 1);
+        mask &= ((1U << e_bit) - 1);
+        return !(*start & mask);
     }
-  }
-  mask = (1U << e_bit) - 1;
-  if ((*ptr & mask)) {
-    return false;
-  }
-  return true;
+    const uint32_t* ptr = start;
+    uint32_t mask = ~((1U << s_bit) - 1);
+    if (*ptr & mask) {
+        return false;
+    }
+    while (ptr < end) {
+        if (*(++ptr) && ptr != end) {
+            return false;
+        }
+    }
+    mask = (1U << e_bit) - 1;
+    if ((*ptr & mask)) {
+        return false;
+    }
+    return true;
 }
 
 void clear_range(size_t start, size_t end) {
-  if (start > end)
-    return;
+    if (start > end) return;
 
-  size_t start_word = start >> 5;
-  size_t start_bit = start & 0x1f;
-  size_t end_word = end >> 5;
-  size_t end_bit = end & 0x1f;
+    size_t start_word = start >> 5;
+    size_t start_bit = start & 0x1f;
+    size_t end_word = end >> 5;
+    size_t end_bit = end & 0x1f;
 
-  if (start_word == end_word) {
-    uint32_t mask = (~0UL << start_bit) & (~0UL >> (31 - end_bit));
-    bitmap[start_word] &= ~mask;
-    return;
-  }
+    if (start_word == end_word) {
+        uint32_t mask = (~0UL << start_bit) & (~0UL >> (31 - end_bit));
+        bitmap[start_word] &= ~mask;
+        return;
+    }
 
-  bitmap[start_word] &= ~(~0ULL << start_bit);
+    bitmap[start_word] &= ~(~0ULL << start_bit);
 
-  if (end_word > start_word + 1) {
-    memset(&bitmap[start_word + 1], 0x0,
-           (end_word - start_word - 1) * sizeof(uint32_t));
-  }
+    if (end_word > start_word + 1) {
+        memset(&bitmap[start_word + 1], 0x0, (end_word - start_word - 1) * sizeof(uint32_t));
+    }
 
-  bitmap[end_word] &= ~(~0ULL >> (31 - end_bit));
+    bitmap[end_word] &= ~(~0ULL >> (31 - end_bit));
 }
 void set_range(size_t start, size_t end) {
-  if (start > end)
-    return;
+    if (start > end) return;
 
-  size_t start_word = start >> 5;
-  size_t start_bit = start & 0x1f;
-  size_t end_word = end >> 5;
-  size_t end_bit = end & 0x1f;
+    size_t start_word = start >> 5;
+    size_t start_bit = start & 0x1f;
+    size_t end_word = end >> 5;
+    size_t end_bit = end & 0x1f;
 
-  if (start_word == end_word) {
-    uint32_t mask = (~0UL << start_bit) & (~0UL >> (31 - end_bit));
-    bitmap[start_word] |= mask;
-    return;
-  }
+    if (start_word == end_word) {
+        uint32_t mask = (~0UL << start_bit) & (~0UL >> (31 - end_bit));
+        bitmap[start_word] |= mask;
+        return;
+    }
 
-  bitmap[start_word] |= (~0ULL << start_bit);
+    bitmap[start_word] |= (~0ULL << start_bit);
 
-  if (end_word > start_word + 1) {
-    memset(&bitmap[start_word + 1], 0xFF,
-           (end_word - start_word - 1) * sizeof(uint32_t));
-  }
+    if (end_word > start_word + 1) {
+        memset(&bitmap[start_word + 1], 0xFF, (end_word - start_word - 1) * sizeof(uint32_t));
+    }
 
-  bitmap[end_word] |= (~0ULL >> (31 - end_bit));
+    bitmap[end_word] |= (~0ULL >> (31 - end_bit));
 }
 
 pageframe_t kalloc_frames(size_t frames) {
-  for (unsigned int i = 0; i < (npages + 31) >> 5; ++i) {
-    if (bitmap[i] == 0xffffffff) {
-      continue;
-    } else {
-      for (unsigned int j = 0; j < 32; ++j) {
-        // align the mask to this index
-        int end_bit = (frames - (32 - j)) % 32;
-        if (test_range(bitmap + i, bitmap + i + (frames >> 5), j, end_bit)) {
-          int s_idx = (i << 5) | j;
-          int e_idx = ((i << 5) | j) + frames;
-          set_range(s_idx, e_idx);
+    for (unsigned int i = 0; i < (npages + 31) >> 5; ++i) {
+        if (bitmap[i] == 0xffffffff) {
+            continue;
+        } else {
+            for (unsigned int j = 0; j < 32; ++j) {
+                // align the mask to this index
+                int end_bit = (frames - (32 - j)) % 32;
+                if (test_range(bitmap + i, bitmap + i + (frames >> 5), j, end_bit)) {
+                    uintptr_t s_idx = (i << 5) | j;
+                    uintptr_t e_idx = ((i << 5) | j) + frames;
+                    set_range(s_idx, e_idx);
+                    return (pageframe_t)(s_idx * PAGE_SIZE);
+                }
+            }
         }
-      }
     }
-  }
-  return NULL;
+    return NULL;
 }
 
 // return physical address of the frame
 // find the first availabe frame
 pageframe_t kalloc_frame_int() {
-  for (unsigned int i = 0; i < (npages + 31) >> 5; ++i) {
-    if (bitmap[i] == 0xffffffff) {
-      continue;
-    } else {
-      for (unsigned int j = 0; j < 32; ++j) {
-        uint64_t idx = ((i << 5) | j);
-        if (!bm_test(idx)) {
-          bm_set(idx);
-          return (pageframe_t)(idx * PAGE_SIZE);
+    for (unsigned int i = 0; i < (npages + 31) >> 5; ++i) {
+        if (bitmap[i] == 0xffffffff) {
+            continue;
+        } else {
+            for (unsigned int j = 0; j < 32; ++j) {
+                uint64_t idx = ((i << 5) | j);
+                if (!bm_test(idx)) {
+                    bm_set(idx);
+                    return (pageframe_t)(idx * PAGE_SIZE);
+                }
+            }
         }
-      }
     }
-  }
-  // no frames left
-  return NULL;
+    // no frames left
+    return NULL;
 }
 
 pageframe_t kalloc_frame() {
-  static uint8_t allocate =
-      1; // whether or not we are going to allocate a new set of preframes
-  static uint8_t pframe = 0;
-  pageframe_t ret;
+    static uint8_t allocate = 1;  // whether or not we are going to allocate a new set of preframes
+    static uint8_t pframe = 0;
+    pageframe_t ret;
 
-  if (pframe == 20) {
-    allocate = 1;
-  }
-
-  if (allocate == 1) {
-    for (int i = 0; i < 20; i++) {
-      pre_frames[i] = kalloc_frame_int();
-      if (pre_frames[i] == NULL) {
-        // TODO: PANIC
-        printf("out of frames");
-        return NULL;
-      }
+    if (pframe == 20) {
+        allocate = 1;
     }
-    pframe = 0;
-    allocate = 0;
-  }
-  ret = pre_frames[pframe];
-  pframe++;
-  return (ret);
+
+    if (allocate == 1) {
+        for (int i = 0; i < 20; i++) {
+            pre_frames[i] = kalloc_frame_int();
+            if (pre_frames[i] == NULL) {
+                // TODO: PANIC
+                printf("out of frames");
+                return NULL;
+            }
+        }
+        pframe = 0;
+        allocate = 0;
+    }
+    ret = pre_frames[pframe];
+    pframe++;
+    return (ret);
 }
 
-void zero_frames(uintptr_t fstart, size_t frames){
-    memset((void *)fstart, 0, frames * PAGE_SIZE);
-}
+void zero_frames(uintptr_t fstart, size_t frames) { memset((void*)fstart, 0, frames * PAGE_SIZE); }
 
 void kfree_frame(pageframe_t a) { bm_clear((uint64_t)a / PAGE_SIZE); }
 
 void kfree_frames(pageframe_t a, size_t frames) {
     int idx = (uint64_t)a / PAGE_SIZE;
-    clear_range(idx, idx + frames); 
+    clear_range(idx, idx + frames);
 }

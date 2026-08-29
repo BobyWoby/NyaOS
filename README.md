@@ -12,6 +12,7 @@
 
 - [ ] unmap_page implementation
 - [ ] Slab allocator for kmalloc
+- [ ] Testing framework for slab allocator using a smaller sizing & impl for mock pfa
 
 ## Further out goals (in no particular order)
 

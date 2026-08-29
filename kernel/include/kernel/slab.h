@@ -37,12 +37,13 @@ typedef struct bufctl{
 typedef struct slab{
     struct slab *prev, *next;
     kmem_bufctl *freelist;
+    void *pstart;
     int refs, buf_cnt;
 }kmem_slab;
 
 typedef struct cache{
+    slab_ht buf2bufctl;
     kmem_slab *head, *tail, *fl_ptr;
-    slab_ht *buf2bufctl;
     char *name;
     size_t size, align; // object size
     kmem_slab hslab, tslab;
