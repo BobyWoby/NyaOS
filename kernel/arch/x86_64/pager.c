@@ -4,7 +4,6 @@
 #include <kernel/system.h>
 #include <stdint.h>
 #include <stdio.h>
-#define PAGE_SIZE 0x1000
 
 // 512 entries per page
 uint64_t *pml4;

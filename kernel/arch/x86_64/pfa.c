@@ -7,7 +7,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#define PAGE_SIZE 0x1000
 static uint32_t npages;
 static uint32_t* bitmap;
 static uint64_t bm_paddr;

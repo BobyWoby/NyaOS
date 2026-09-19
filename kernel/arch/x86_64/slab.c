@@ -2,13 +2,16 @@
 #include <kernel/pfa.h>
 #include <kernel/slab.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
 
 static kmem_cache cache_cache;
 
-kmem_cache caches[12];  // statically pre-built caches in powers of 2
+kmem_cache *caches[12];  // statically pre-built caches in powers of 2
+
+void kmem_cache_grow(kmem_cache* cache);
 
 uint64_t hash(uintptr_t in, int sz) { return in % sz; }
 
@@ -89,7 +92,36 @@ void* kmalloc(size_t size);
 
 void* kmem_cache_alloc(kmem_cache* cache);
 
-void slab_alloc_init() {}
+void kmem_cache_init(kmem_cache *cache, size_t size){
+    cache->size = size;
+}
+
+void slab_alloc_init() {
+    //TODO: init slab allocator
+    //TODO: Bootstrap cache_cache
+    cache_cache.size = sizeof(kmem_cache);
+    // 0 out the head and tail slabs
+    memset(&cache_cache.hslab, 0, sizeof(kmem_slab));
+    memset(&cache_cache.tslab, 0, sizeof(kmem_slab));
+    cache_cache.head = &cache_cache.hslab;
+    cache_cache.tail = &cache_cache.tslab;
+    cache_cache.fl_ptr = &cache_cache.hslab;
+    cache_cache.name = "cache_cache";
+    kmem_cache_grow(&cache_cache);
+    
+    for(int i = 0; i < INITIAL_SLAB_CNT; ++i){
+        caches[i] = (kmem_cache *)kmem_cache_alloc(&cache_cache);
+        caches[i]->size = 2 << i;
+        memset(&caches[i]->hslab, 0, sizeof(kmem_slab));
+        memset(&caches[i]->tslab, 0, sizeof(kmem_slab));
+        caches[i]->head = &caches[i]->hslab;
+        caches[i]->tail = &caches[i]->tslab;
+        caches[i]->fl_ptr = caches[i]->head;
+        //TODO: Implement sprintf so I can actually name my shi
+        // sprintf(); // 
+        caches[i]->name = "tmp";
+    }
+}
 
 kmem_cache* kmem_cache_create(char* name, size_t size, int align) {
     // create the cache
@@ -329,6 +361,8 @@ void* kmalloc(size_t size) {
     } else {
         return kmem_cache_alloc(&caches[idx]);
     }
+
+    return NULL;
 }
 
 void kfree(void* ptr) {

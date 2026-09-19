@@ -2,8 +2,10 @@
 #define __SLAB_H
 #include <stddef.h>
 #include <stdint.h>
+#include <kernel/pfa.h>
 
-#define PAGE_SIZE 4096
+// number of pre-initialzied caches: cache sizes go from 2^1B -> 2^{INITIAL_SLAB_CNT}B
+#define INITIAL_SLAB_CNT 12
 #define BUFS_PER_SLAB 8.0
 #define SMALL_OBJ_SIZE PAGE_SIZE / BUFS_PER_SLAB
 
@@ -15,7 +17,6 @@ typedef enum {
     DELETED,
     FULL
 } hash_state;
-
 
 typedef struct hashval{
     kmem_bufctl *val; // bufctl

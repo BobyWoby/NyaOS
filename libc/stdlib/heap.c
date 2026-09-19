@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define PAGE_SIZE 4096
 #define MAGIC 0xDEADBEEF
 
 // TODO: unocmment the macros

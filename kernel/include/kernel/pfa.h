@@ -2,6 +2,7 @@
 #define __PFA_H
 #include <stddef.h>
 #include <stdint.h>
+#define PAGE_SIZE 0x1000
 
 typedef void *pageframe_t;
 
