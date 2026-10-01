@@ -1,8 +1,22 @@
 SYSTEM_HEADER_PROJECTS="libc kernel"
 PROJECTS="libc kernel"
 
-export MAKE=${MAKE:-make}
-export HOST=${HOST:-$(./default-host.sh)}
+if [ -z "${MAKE:-}" ]; then
+  if command -v gmake >/dev/null 2>&1; then
+    MAKE=gmake
+  else
+    MAKE=make
+  fi
+fi
+
+# macOS commonly exports HOST as the machine hostname.  Only accept it as a
+# toolchain target when it looks like an actual cross-compiler triplet.
+case "${HOST:-}" in
+  *-elf) ;;
+  *) HOST=$(./default-host.sh) ;;
+esac
+
+export MAKE HOST
 
 export AR=${HOST}-ar
 export AS=${HOST}-as

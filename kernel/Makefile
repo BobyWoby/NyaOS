@@ -62,7 +62,7 @@ install: install-headers install-kernel
 
 install-headers:
 	mkdir -p $(DESTDIR)$(INCLUDEDIR)
-	cp -R --preserve=timestamps include/. $(DESTDIR)$(INCLUDEDIR)/.
+	cp -R -p include/. $(DESTDIR)$(INCLUDEDIR)/.
 
 install-kernel: nyaos.kernel
 	mkdir -p $(DESTDIR)$(BOOTDIR)

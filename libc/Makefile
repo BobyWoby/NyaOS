@@ -1,5 +1,5 @@
 DEFAULT_HOST!=../default-host.sh
-HOST?=DEFAULT_HOST
+HOST?=$(DEFAULT_HOST)
 HOSTARCH!=../target-triplet-to-arch.sh $(HOST)
 
 CFLAGS?=-O2 -g
@@ -58,10 +58,35 @@ LIBK_OBJS=$(FREEOBJS:.o=.libk.o)
 #BINARIES=libc.a libk.a # Not ready for libc yet.
 BINARIES=libk.a
 
-.PHONY: all clean install install-headers install-libs
+.PHONY: all clean install install-headers install-libs test
 .SUFFIXES: .o .libk.o .c .S
 
 all: $(BINARIES)
+
+# Tests build and run on the host, not the target, so they use the host
+# compiler and the host libm as a reference rather than the cross CC that
+# config.sh exports.  They link the sources under test directly and never
+# touch libk.a.
+TEST_CC?=cc
+TEST_CFLAGS?=-std=c11 -O2 -g -Wall -Wextra -Wpedantic -fno-builtin
+TEST_LDLIBS?=-lm
+
+TEST_SOURCES:=$(wildcard tests/*/*_test.c)
+TEST_BINARIES:=$(TEST_SOURCES:.c=)
+
+test: $(TEST_BINARIES)
+	@status=0; \
+	for binary in $(TEST_BINARIES); do \
+		./$$binary || status=1; \
+	done; \
+	exit $$status
+
+# tests/math/log_test is built from tests/math/log_test.c plus every source
+# in math/, so a new test needs no rule of its own.
+.SECONDEXPANSION:
+
+tests/%_test: tests/%_test.c tests/test_util.c $$(wildcard $$(dir $$*)*.c)
+	$(TEST_CC) $(TEST_CFLAGS) $^ $(TEST_LDLIBS) -o $@
 
 libc.a: $(OBJS)
 	$(AR) rcs $@ $(OBJS)
@@ -82,6 +107,7 @@ libk.a: $(LIBK_OBJS)
 	$(CC) -MD -c $< -o $@ $(LIBK_CFLAGS) $(LIBK_CPPFLAGS)
 
 clean:
+	rm -f $(TEST_BINARIES)
 	rm -f $(BINARIES) *.a
 	rm -f $(OBJS) $(LIBK_OBJS) *.o */*.o */*/*.o
 	rm -f $(OBJS:.o=.d) $(LIBK_OBJS:.o=.d) *.d */*.d */*/*.d
@@ -90,7 +116,7 @@ install: install-headers install-libs
 
 install-headers:
 	mkdir -p $(DESTDIR)$(INCLUDEDIR)
-	cp -R --preserve=timestamps include/. $(DESTDIR)$(INCLUDEDIR)/.
+	cp -R -p include/. $(DESTDIR)$(INCLUDEDIR)/.
 
 install-libs: $(BINARIES)
 	mkdir -p $(DESTDIR)$(LIBDIR)
