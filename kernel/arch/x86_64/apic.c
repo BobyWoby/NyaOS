@@ -13,6 +13,9 @@
 
 // write 0 to here to send EOI
 #define EOI_REG 0xB0
+#define TIMER_DIVIDE_REG 0x3e0
+#define TIMER_INIT_COUNT_REG 0x380
+#define TIMER_CUR_COUNT_REG 0x390
 
 static volatile uintptr_t apic_offset;
 
@@ -56,13 +59,16 @@ void write_reg(uint32_t data, uint32_t reg_offset) {
 }
 uint32_t read_reg(uint32_t reg_offset) { return *(volatile uint32_t*)(apic_offset + reg_offset); }
 
+void apic_start_timer(uint32_t divider, uint32_t sleep_micros){
+    write_reg(divider, TIMER_DIVIDE_REG);
+}
+
 void apic_init() {
     remap_irqs();
     pic_disable();
     // should map the base addr page as uncacheable
     apic_offset = cpu_get_apic_base();
 
-    // uint64_t* paddr = kalloc_frame();
     map_page((void*)apic_offset, (void*)apic_offset, 0b11000);  // UC is PAT3 in Limine
 
     cpu_set_apic_base(apic_offset);

@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <kernel/slab.h>
 
 #define ACK 0xfa
 #define RESEND 0xfe
@@ -10,7 +11,11 @@
 
 typedef enum{
     READY = 0,
-} KEYBOARD_STATE;
+    MAKE_0,
+    EXTENDED,
+    EXTENDED_BREAK
+} 
+KEYBOARD_STATE; 
 
 static KEYBOARD_STATE state;
 
@@ -26,21 +31,22 @@ typedef struct queue{
 }kb_cmd_queue_t;
 
 static kb_cmd_queue_t queue;
-
-void kb_push(uint8_t cmd){
-}
+static kmem_cache *kb_cmd_cache;
 
 void handle_keyboard() {
-    uint8_t scancode = recv();  // read + re-arm IRQ1
-    switch (state) {
-        case READY:
-            scancode = recv();
-            break;
+    uint8_t scancode;
+    // scancode = recv();  // read + re-arm IRQ1
+    scancode = recv();
+    switch(state){
     }
+
     printf("scancode: %#x\n", scancode);
 }
 
 void kb_enable_scanning() {
+    // initialize keyboard structures
+    kb_cmd_cache = kmem_cache_create("kb_cmd", sizeof(kb_cmd_node_t), 0);
+
     send(0xf0, PORT);
     uint8_t res = 0;
     uint8_t scancode;

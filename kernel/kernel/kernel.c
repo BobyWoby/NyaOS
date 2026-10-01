@@ -13,6 +13,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include "kernel/slab.h"
 
 __attribute__((used, section(".limine_requests"))) static volatile uint64_t
     limine_base_revision[] = LIMINE_BASE_REVISION(6);
@@ -38,6 +39,8 @@ void kernel_main() {
   pfa_init();
   paging_init();
   idt_init();
+
+  slab_alloc_init();
 
   apic_init();
   ioapic_init();

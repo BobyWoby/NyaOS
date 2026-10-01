@@ -2,14 +2,14 @@
 #include <kernel/pfa.h>
 #include <kernel/slab.h>
 #include <stdbool.h>
-#include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
 static kmem_cache cache_cache;
 
-kmem_cache *caches[12];  // statically pre-built caches in powers of 2
+kmem_cache* caches[12];  // statically pre-built caches in powers of 2
 
 void kmem_cache_grow(kmem_cache* cache);
 
@@ -92,33 +92,41 @@ void* kmalloc(size_t size);
 
 void* kmem_cache_alloc(kmem_cache* cache);
 
-void kmem_cache_init(kmem_cache *cache, size_t size){
-    cache->size = size;
-}
+void kmem_cache_init(kmem_cache* cache, size_t size) { cache->size = size; }
 
 void slab_alloc_init() {
-    //TODO: init slab allocator
-    //TODO: Bootstrap cache_cache
     cache_cache.size = sizeof(kmem_cache);
     // 0 out the head and tail slabs
     memset(&cache_cache.hslab, 0, sizeof(kmem_slab));
     memset(&cache_cache.tslab, 0, sizeof(kmem_slab));
+
     cache_cache.head = &cache_cache.hslab;
     cache_cache.tail = &cache_cache.tslab;
-    cache_cache.fl_ptr = &cache_cache.hslab;
+    cache_cache.head->prev = NULL;
+    cache_cache.head->next = cache_cache.tail;
+    cache_cache.head->freelist = NULL;
+    cache_cache.head->refs = 0;
+
+    cache_cache.tail->prev = cache_cache.head;
+    cache_cache.tail->prev = cache_cache.head;
+    cache_cache.tail->freelist = NULL;
+    cache_cache.tail->refs = 0;
+
+    cache_cache.fl_ptr = cache_cache.tail;
     cache_cache.name = "cache_cache";
+
     kmem_cache_grow(&cache_cache);
-    
-    for(int i = 0; i < INITIAL_SLAB_CNT; ++i){
-        caches[i] = (kmem_cache *)kmem_cache_alloc(&cache_cache);
+
+    for (int i = 0; i < INITIAL_SLAB_CNT; ++i) {
+        caches[i] = (kmem_cache*)kmem_cache_alloc(&cache_cache);
         caches[i]->size = 2 << i;
         memset(&caches[i]->hslab, 0, sizeof(kmem_slab));
         memset(&caches[i]->tslab, 0, sizeof(kmem_slab));
         caches[i]->head = &caches[i]->hslab;
         caches[i]->tail = &caches[i]->tslab;
         caches[i]->fl_ptr = caches[i]->head;
-        //TODO: Implement sprintf so I can actually name my shi
-        // sprintf(); // 
+        // TODO: Implement sprintf so I can actually name my shi
+        //  sprintf(); //
         caches[i]->name = "tmp";
     }
 }
@@ -158,6 +166,7 @@ void _insert_slab(kmem_slab* it, kmem_slab* slab) {
 
 // append slab to the end of the cache
 void _append_slab(kmem_cache* cache, kmem_slab* slab) {
+
     _insert_slab(cache->tail, slab);
     if (cache->fl_ptr == cache->tail) {
         cache->fl_ptr = slab;
@@ -233,11 +242,12 @@ void kmem_cache_grow(kmem_cache* cache) {
             buf->back = new_slab;
         }
     }
+    
     // add the new_slab slab to the cache's free list
     _append_slab(cache, new_slab);
 }
 
-void _free_large_slab(kmem_cache* cache, kmem_slab *slab) {
+void _free_large_slab(kmem_cache* cache, kmem_slab* slab) {
     size_t frames = (sizeof(kmem_slab) + slab->buf_cnt * sizeof(kmem_bufctl)) / PAGE_SIZE;
     uintptr_t page_addr = (uintptr_t)slab->pstart & ~(PAGE_SIZE - 1);
     size_t buf_frames = (slab->buf_cnt * cache->size + PAGE_SIZE - 1) / PAGE_SIZE;
@@ -308,7 +318,6 @@ void kmem_cache_free(kmem_cache* cache, void* buf) {
             alive = false;
         }
     }
-
     if (alive && slab->refs == slab->buf_cnt - 1) {
         _rm_slab(slab);
         _insert_slab(cache->fl_ptr, slab);
@@ -329,7 +338,7 @@ void* kmem_cache_alloc(kmem_cache* cache) {
     // if this is a small object, the bufctl object is
     if (cache->size <= SMALL_OBJ_SIZE) {
         void* res = (void*)slab->freelist;
-        slab->freelist = (kmem_bufctl*)((uintptr_t)res + cache->size);
+        slab->freelist = *(kmem_bufctl **)((uintptr_t)res + cache->size);
         *(uint64_t*)((uintptr_t)res + cache->size) = 0xDEADBEEF;
 
         if ((++(slab->refs) >= slab->buf_cnt)) {
@@ -344,27 +353,38 @@ void* kmem_cache_alloc(kmem_cache* cache) {
         if ((++(slab->refs) >= slab->buf_cnt)) {
             cache->fl_ptr = cache->fl_ptr->next;
         }
-
         return bufctl->buf;
     }
-
     return NULL;
 }
 
 void* kmalloc(size_t size) {
     int idx;
-    for (idx = 0; idx < 12 && size > (1 << idx); ++idx) {
+    for (idx = 0; idx < INITIAL_SLAB_CNT && size > (size_t)(2 << idx); ++idx) {
     }
-    if (idx >= 12) {
+    if (idx >= INITIAL_SLAB_CNT) {
         // gonna have to do smt else here bc its too big
         // create a new cache?
     } else {
-        return kmem_cache_alloc(&caches[idx]);
+        return kmem_cache_alloc(caches[idx]);
     }
 
     return NULL;
 }
 
 void kfree(void* ptr) {
-    // gonna have to build a lookup table for ts :(
+    //TODO: WIP b/c I'm too stupid to figure out how to get the cache from the ptr
+    
+    int idx = 0;
+    kmem_bufctl *bufctl = NULL;
+    for (; idx < INITIAL_SLAB_CNT  ; ++idx) {
+        bufctl = ht_get(&caches[idx]->buf2bufctl, (uintptr_t)ptr);
+        if(bufctl != NULL){
+            break;
+        }
+    }
+    if(idx == INITIAL_SLAB_CNT || bufctl == NULL){
+        printf("Invalid FREE\n");
+    }
+    kmem_cache_free(bufctl->back->back, ptr);
 }

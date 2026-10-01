@@ -16,9 +16,6 @@
 
 void page_fault(uint64_t vaddr) { printf("faulting addr (CR2)=%#llx\n", vaddr); }
 
-
-
-
 void exception_handler(registers_t* regs) {
     // Hardware IRQs (remapped to 0x20-0x2f): dispatch quietly and return.
     if (regs->vector >= 0x20 && regs->vector <= 0x2f) {

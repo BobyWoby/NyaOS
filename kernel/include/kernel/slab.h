@@ -10,6 +10,7 @@
 #define SMALL_OBJ_SIZE PAGE_SIZE / BUFS_PER_SLAB
 
 typedef struct slab kmem_slab;
+typedef struct cache kmem_cache;
 typedef struct bufctl kmem_bufctl;
 
 typedef enum {
@@ -37,6 +38,7 @@ typedef struct bufctl{
 
 typedef struct slab{
     struct slab *prev, *next;
+    kmem_cache* back;
     kmem_bufctl *freelist;
     void *pstart;
     int refs, buf_cnt;
@@ -49,4 +51,14 @@ typedef struct cache{
     size_t size, align; // object size
     kmem_slab hslab, tslab;
 } kmem_cache;
+
+// void kmem_cache_grow(kmem_cache* cache);
+void* kmem_cache_alloc(kmem_cache* cache);
+// void kmem_cache_init(kmem_cache* cache, size_t size);
+void slab_alloc_init();
+kmem_cache* kmem_cache_create(char* name, size_t size, int align);
+void kmem_cache_grow(kmem_cache* cache);
+void kmem_cache_reap(kmem_cache* cache);
+void kmem_cache_free(kmem_cache* cache, void* buf);
+
 #endif
