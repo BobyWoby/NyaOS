@@ -2,8 +2,10 @@
 #define __KEYBOARD_H
 
 #include <stdbool.h>
+#include <stdint.h>
 
 typedef enum {
+    KEY_UNKNOWN = 0,
     A,
     B,
     C,
@@ -14,6 +16,7 @@ typedef enum {
     H,
     I,
     J,
+    K,
     L,
     M,
     N,
@@ -103,10 +106,41 @@ typedef enum {
     F13,
     F14,
     F15,
+    CAPSLOCK,
+    NUMLOCK,
+    SCROLLLOCK,
+    NPDECIMAL,
+    NPENTER,
+    PRINTSCREEN,
+    WWW_SEARCH,
+    PREV_TRACK,
+    WWW_FAVORITES,
+    WWW_REFRESH,
+    VOLUME_DOWN,
+    MUTE,
+    WWW_STOP,
+    CALCULATOR,
+    WWW_FORWARD,
+    VOLUME_UP,
+    PLAY_PAUSE,
+    POWER,
+    WWW_BACK,
+    WWW_HOME,
+    MEDIA_STOP,
+    SLEEP,
+    MY_COMPUTER,
+    EMAIL,
+    NEXT_TRACK,
+    MEDIA_SELECT,
+    WAKE,
     PAUSE
-} KEYS;
+} KEY;
 
-static bool key_states[PAUSE + 1];
+extern bool caps_lock;
+
+extern bool key_states[PAUSE + 1];
+extern void (*key_down_handler)(KEY);
+extern void (*key_up_handler)(KEY);
 
 void kb_enable_scanning();
 void handle_keyboard();

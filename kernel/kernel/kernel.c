@@ -27,6 +27,22 @@ __attribute__((used, section(".limine_requests_end"))) static volatile uint64_t
 
 extern void enable_sse();
 
+void key_down(KEY kc){
+    char c;
+    if(kc >= A && kc <= Z){
+        c = kc - A + 'a';
+        if(key_states[LSHIFT] || caps_lock){
+            c -= 'a' - 'A';
+        }
+        printf("%c", c);
+    }else if(kc == RET){
+        printf("\n");
+    }else if(kc == SPACE){
+        printf(" ");
+    }
+    
+}
+
 void kernel_main() {
   if (LIMINE_BASE_REVISION_SUPPORTED(limine_base_revision) == false) {
     hcf();
@@ -48,6 +64,7 @@ void kernel_main() {
   printf("UwU Hallo %sUwu\nWelcome to NyaOS\n", ":3");
   ps2_init();
   kb_enable_scanning();
+  key_down_handler = key_down;
 
   // spin forever ig
   hcf();
