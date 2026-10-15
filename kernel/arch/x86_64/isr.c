@@ -25,6 +25,12 @@ void exception_handler(registers_t* regs) {
         send_eoi();
         return;
     }
+    else if(regs->vector == 0x30){
+        // timer interrupt
+        // printf("timer interrupt\n");
+        send_eoi(); 
+        return;
+    }
 
     // CPU exceptions: dump state and halt.
     printf("\n*** EXCEPTION %llu\n", regs->vector);

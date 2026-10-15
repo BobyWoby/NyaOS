@@ -59,6 +59,7 @@ void kernel_main() {
   slab_alloc_init();
 
   apic_init();
+  apic_start_timer(0x3, 1000000);
   ioapic_init();
 
   printf("UwU Hallo %sUwu\nWelcome to NyaOS\n", ":3");

@@ -16,6 +16,9 @@
 #define TIMER_DIVIDE_REG 0x3e0
 #define TIMER_INIT_COUNT_REG 0x380
 #define TIMER_CUR_COUNT_REG 0x390
+#define TIMER_VECTOR 0x30
+#define TIMER_REG 0x320
+
 
 static volatile uintptr_t apic_offset;
 
@@ -60,7 +63,10 @@ void write_reg(uint32_t data, uint32_t reg_offset) {
 uint32_t read_reg(uint32_t reg_offset) { return *(volatile uint32_t*)(apic_offset + reg_offset); }
 
 void apic_start_timer(uint32_t divider, uint32_t sleep_micros){
+    write_reg(0x0, TIMER_INIT_COUNT_REG);
     write_reg(divider, TIMER_DIVIDE_REG);
+    write_reg(TIMER_VECTOR | (1u << 17), TIMER_REG);
+    write_reg(sleep_micros, TIMER_INIT_COUNT_REG);
 }
 
 void apic_init() {
