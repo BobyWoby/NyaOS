@@ -1,5 +1,5 @@
-#include <kernel/ioapic.h>
 #include <kernel/apic.h>
+#include <kernel/ioapic.h>
 #include <kernel/pager.h>
 #include <kernel/requests.h>
 #include <kernel/rsdt.h>
@@ -7,7 +7,11 @@
 #include <stdint.h>
 #include <string.h>
 
-#define ISA_IRQ_COUNT 16
+#include "stdlib.h"
+
+uintptr_t ioapic_phys, gsi_base;
+uint32_t irq_gsi[ISA_IRQ_COUNT];
+uint16_t irq_flags[ISA_IRQ_COUNT];
 
 void write_ioapic(const uintptr_t apic_base, const uint8_t offset, const uint32_t val) {
     *(volatile uint32_t*)(apic_base) = offset;
@@ -51,14 +55,14 @@ void* find_table(char* signature) {
     return NULL;
 }
 
-static void ioapic_route(uintptr_t base, uint32_t gsi_base, uint32_t gsi,
-                         uint16_t iso_flags, uint8_t vector, uint8_t lapic_id) {
+static void ioapic_route(uintptr_t base, uint32_t gsi_base, uint32_t gsi, uint16_t iso_flags,
+                         uint8_t vector, uint8_t lapic_id) {
     uint32_t index = gsi - gsi_base;
     uint32_t reg = 0x10 + index * 2;
 
     uint32_t low = vector;
 
-    // could set delivery mode here if we want to 
+    // could set delivery mode here if we want to
 
     if ((iso_flags & 0x3) == 0x3) low |= (1 << 13);
     if ((iso_flags & 0xc) == 0xc) low |= (1 << 15);
@@ -68,25 +72,19 @@ static void ioapic_route(uintptr_t base, uint32_t gsi_base, uint32_t gsi,
     write_ioapic(base, reg, low);
 }
 
-// Must run after apic_init() (needs the LAPIC mapped for read_reg).
-void ioapic_init() {
+int parse_madt(){
     MADT_t* madt = (MADT_t*)find_table("APIC");
     if (!madt) {
-        return;
+        return -1;
     }
+    uint8_t* p = (uint8_t*)madt + sizeof(MADT_t);
+    uint8_t* end = (uint8_t*)madt + madt->hdr.length;
 
-    uint64_t ioapic_phys = 0, gsi_base = 0;
-
-    // Default ISA IRQ -> GSI identity map; overridden by any ISO entries.
-    uint32_t irq_gsi[ISA_IRQ_COUNT];
-    uint16_t irq_flags[ISA_IRQ_COUNT];
     for (int i = 0; i < ISA_IRQ_COUNT; ++i) {
         irq_gsi[i] = i;
         irq_flags[i] = 0;
     }
 
-    uint8_t* p = (uint8_t*)madt + sizeof(MADT_t);
-    uint8_t* end = (uint8_t*)madt + madt->hdr.length;
 
     while (p < end) {
         madt_record_hdr_t* entry = (madt_record_hdr_t*)p;
@@ -110,13 +108,25 @@ void ioapic_init() {
 
     if (!ioapic_phys) {
         printf("No IO APIC found in MADT!\n");
+        return -1;
+    }
+    return 0;
+}
+
+
+// Must run after apic_init() (needs the LAPIC mapped for read_reg).
+void ioapic_init() {
+    if (!ioapic_phys) {
+        printf("No IO APIC found in MADT!\n");
         return;
     }
 
     // Map the IO APIC MMIO window uncacheable (UC = PAT3), like the LAPIC.
     uint64_t hhdm = hhdm_request.response->offset;
     uintptr_t ioapic_base = ioapic_phys + hhdm;
-    map_page((void*)ioapic_phys, (void*)ioapic_base, 0b11000);
+    // if (map_page(ioapic_phys, ioapic_base, 0b11000 | PAGE_RW) == -1) {
+    //     abort();
+    // }
 
     // Destination = this CPU's LAPIC (ID in bits 24-31 of the LAPIC ID reg).
     uint8_t lapic_id = read_reg(0x20) >> 24;

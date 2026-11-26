@@ -7,6 +7,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "stdlib.h"
+
 #define IA32_APIC_BASE_MSR 0x1B
 #define IA32_APIC_BASE_MSR_BSP 0x100  // Processor is a BSP
 #define IA32_APIC_BASE_MSR_ENABLE 0x800
@@ -18,7 +20,6 @@
 #define TIMER_CUR_COUNT_REG 0x390
 #define TIMER_VECTOR 0x30
 #define TIMER_REG 0x320
-
 
 static volatile uintptr_t apic_offset;
 
@@ -46,15 +47,14 @@ uintptr_t cpu_get_apic_base() {
 
 void cpu_write_io_apic(void* ioapicaddr, uint32_t reg, uint32_t val) {
     uint32_t volatile* ioapic = (uint32_t volatile*)ioapicaddr;
-    ioapic[0] = (reg & 0xff); // set addr reg
-    ioapic[4] = val; // write to IOAPIC_BASE+0x10
+    ioapic[0] = (reg & 0xff);  // set addr reg
+    ioapic[4] = val;           // write to IOAPIC_BASE+0x10
 }
 
-uint32_t cpu_read_io_apic(void *ioapicaddr, uint32_t reg)
-{
-   uint32_t volatile *ioapic = (uint32_t volatile *)ioapicaddr;
-   ioapic[0] = (reg & 0xff);
-   return ioapic[4];
+uint32_t cpu_read_io_apic(void* ioapicaddr, uint32_t reg) {
+    uint32_t volatile* ioapic = (uint32_t volatile*)ioapicaddr;
+    ioapic[0] = (reg & 0xff);
+    return ioapic[4];
 }
 
 void write_reg(uint32_t data, uint32_t reg_offset) {
@@ -62,7 +62,7 @@ void write_reg(uint32_t data, uint32_t reg_offset) {
 }
 uint32_t read_reg(uint32_t reg_offset) { return *(volatile uint32_t*)(apic_offset + reg_offset); }
 
-void apic_start_timer(uint32_t divider, uint32_t sleep_micros){
+void apic_start_timer(uint32_t divider, uint32_t sleep_micros) {
     write_reg(0x0, TIMER_INIT_COUNT_REG);
     write_reg(divider, TIMER_DIVIDE_REG);
     write_reg(TIMER_VECTOR | (1u << 17), TIMER_REG);
@@ -75,7 +75,10 @@ void apic_init() {
     // should map the base addr page as uncacheable
     apic_offset = cpu_get_apic_base();
 
-    map_page((void*)apic_offset, (void*)apic_offset, 0b11000);  // UC is PAT3 in Limine
+    // UC is PAT3 in Limine
+    if (map_page(apic_offset, apic_offset, 0b11000 | PAGE_RW) == -1) {
+        abort();
+    }
 
     cpu_set_apic_base(apic_offset);
     write_reg(read_reg(0xf0) | 0x100, 0xf0);  // enable spurious interrupts

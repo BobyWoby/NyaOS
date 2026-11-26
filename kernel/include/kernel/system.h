@@ -23,7 +23,7 @@ typedef struct {
 
   uint8_t reserved3;
   uint8_t iopb;
-} tss_entry_t;
+}__attribute__((packed)) tss_entry_t;
 
 typedef struct lm_sysseg_desc {
   uint16_t limit_lo;
@@ -34,7 +34,7 @@ typedef struct lm_sysseg_desc {
   uint8_t base_hi;
   uint32_t base_last;
   uint32_t reserved;
-} lm_sysseg_desc_t;
+}__attribute__((packed)) lm_sysseg_desc_t;
 
 extern uint64_t *pml4;
 

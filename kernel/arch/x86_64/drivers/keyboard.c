@@ -98,6 +98,7 @@ void handle_keyboard() {
             break;
         } break;
     }
+    // loop through hooks, and run them
     // printf("scancode: %#x\n", scancode);
 }
 

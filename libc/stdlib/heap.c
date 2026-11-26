@@ -29,7 +29,10 @@ char *heap_end;
 
 
 void heap_init() {
-    map_page(kalloc_frame(), &kernel_end_virtual, 0);
+    if(map_page((uintptr_t)kalloc_frame(), (uintptr_t)&kernel_end_virtual, PAGE_RW) == -1){
+        // panic
+        abort();
+    };
     heap = (uint64_t *)&kernel_end_virtual;
     head = (heap_node_t *)heap;
     head->next = NULL;

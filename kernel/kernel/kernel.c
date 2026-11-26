@@ -26,6 +26,7 @@ __attribute__((used, section(".limine_requests_end"))) static volatile uint64_t
     limine_requests_end_marker[] = LIMINE_REQUESTS_END_MARKER;
 
 extern void enable_sse();
+extern void jump_usermode();
 
 void key_down(KEY kc){
     char c;
@@ -43,6 +44,13 @@ void key_down(KEY kc){
     
 }
 
+void test_user_function(){
+    // asm("cli");
+    while(true){};
+}
+
+
+
 void kernel_main() {
   if (LIMINE_BASE_REVISION_SUPPORTED(limine_base_revision) == false) {
     hcf();
@@ -53,6 +61,11 @@ void kernel_main() {
   terminal_initialize();
 
   pfa_init();
+
+  if(parse_madt() == -1){
+      printf("Failed to parse MADT\n");
+      hcf();
+  };
   paging_init();
   idt_init();
 
@@ -66,6 +79,8 @@ void kernel_main() {
   ps2_init();
   kb_enable_scanning();
   key_down_handler = key_down;
+
+  // jump_usermode();
 
   // spin forever ig
   hcf();

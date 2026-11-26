@@ -1,15 +1,15 @@
 .global flush_gdt
 flush_gdt:
     lgdt    (%rdi)
-    # Push code segment to stack
-    push    $(2 * 8 | 0)
+    # Push GDT Kernel code segment to stack
+    push    $(1 * 8 | 0)
 
     leaq .reload_cs(%rip), %rax  # Load address of .reload_CS into RAX
-    push %rax                  # Push this value to the stack
-    retfq                     # Perform a far return, RETFQ or LRETQ depending on syntax
+    push %rax                   # Push this value to the stack
+    retfq                       # Perform a far return, RETFQ or LRETQ depending on syntax
 
 .reload_cs:
-    mov     $(3 * 8 | 0), %ax
+    mov     $(2 * 8 | 0), %ax # push GDT kernel data segment to stack
     mov     %ax, %ds
     mov     %ax, %es
     mov     %ax, %fs
@@ -19,7 +19,7 @@ flush_gdt:
 
 .global flush_tss
 flush_tss:
-    mov     $(7 * 8 | 0), %ax
+    mov     $(5 * 8 | 0), %ax # Push GDT TSS Segment to stack
     ltr     %ax
     ret
 

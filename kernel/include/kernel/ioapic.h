@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#define ISA_IRQ_COUNT 16
+
 // typedef struct XSDP {
 //   char signature[8];
 //   uint8_t check_sum;
@@ -21,10 +23,14 @@
 //
 // } __attribute__((packed)) XSDP_t;
 
+extern uintptr_t ioapic_phys, gsi_base;
+extern uint32_t irq_gsi[ISA_IRQ_COUNT];
+extern uint16_t irq_flags[ISA_IRQ_COUNT];
 
 void write_ioapic(const uintptr_t apic_base, const uint8_t offset, const uint32_t val);
 uint32_t read_ioapic(const uintptr_t apic_base, const uint8_t offset);
-void *find_table();
+void* find_table();
 void ioapic_init();
+int parse_madt();
 
 #endif
