@@ -1,5 +1,6 @@
 .global jump_usermode
-.extern test_user_function
+
+# rdi = entry point, rsi = stack top
 jump_usermode:
 	mov $((3 * 8) | 3), %ax   # gdt ring 3 data selector, RPL 3
 	mov %ax, %ds
@@ -8,10 +9,12 @@ jump_usermode:
 	mov %ax, %gs              # SS is set by iretq
 
 	# iretq frame: SS, RSP, RFLAGS, CS, RIP
-	mov %rsp, %rax
 	pushq $((3 * 8) | 3)      # SS (user data)
-	pushq %rax                # RSP
+	pushq %rsi                # RSP
 	pushfq                    # RFLAGS
+    popq %rax                  # RAX = current RFLAGS
+    andq $~(3 << 12), %rax    # Clear IOPL bits 12 and 13
+    pushq %rax                 # RFLAGS for iretq
 	pushq $((4 * 8) | 3)      # CS (user code)
-	pushq $test_user_function # RIP
+	pushq %rdi # RIP
 	iretq

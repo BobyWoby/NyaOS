@@ -21,8 +21,8 @@ typedef struct {
 
   uint64_t reserved2;
 
-  uint8_t reserved3;
-  uint8_t iopb;
+  uint16_t reserved3;
+  uint16_t iopb;
 }__attribute__((packed)) tss_entry_t;
 
 typedef struct lm_sysseg_desc {
