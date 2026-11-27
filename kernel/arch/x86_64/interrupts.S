@@ -31,7 +31,11 @@ isr_common:
     push %r15
 
     mov %rsp, %rdi
+    mov %rsp, %r12
+    cld
+    andq $-16, %rsp
     call exception_handler
+    mov %r12, %rsp
 
     pop %r15
     pop %r14

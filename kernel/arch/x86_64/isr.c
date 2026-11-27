@@ -30,6 +30,11 @@ void exception_handler(registers_t* regs) {
         // printf("timer interrupt\n");
         send_eoi(); 
         return;
+    }else if(regs->vector == 0x80){
+        // syscall
+        printf("syscall!\n");
+        send_eoi();
+        return;
     }
 
     // CPU exceptions: dump state and halt.
@@ -42,6 +47,10 @@ void exception_handler(registers_t* regs) {
         uint64_t cr2;
         __asm__ volatile("mov %%cr2, %0" : "=r"(cr2));
         page_fault(cr2);
+    }
+
+    if(regs->cs & 3){
+        printf("USER SPACE FAULT\n");
     }
     __asm__ volatile("cli; hlt");  // hangs
 }

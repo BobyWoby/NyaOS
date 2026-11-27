@@ -55,8 +55,8 @@ void test_user_function() {
 }
 
 static const uint8_t user_code[] = {
-    0xfa,       // CLI should fail
-    0xeb, 0xfe  // short jump to -2 instructions from this + 1
+    0xcd, 0x80,  // interrupt 0x80 should be a syscall
+    0xeb, 0xfe   // short jump to -2 instructions from this + 1
 };
 
 const uintptr_t UC_VA = 0x400000;
@@ -78,8 +78,7 @@ void setup_usercode(uintptr_t user_code_va, uintptr_t code_stack_base) {
     if (map_page(stack_frame, code_stack_base, PAGE_RW | PAGE_US) == -1) abort();
 }
 
-extern void jump_usermode(uintptr_t entry, uintptr_t stack_top)
-    __attribute__((noreturn));
+extern void jump_usermode(uintptr_t entry, uintptr_t stack_top) __attribute__((noreturn));
 
 void kernel_main() {
     if (LIMINE_BASE_REVISION_SUPPORTED(limine_base_revision) == false) {

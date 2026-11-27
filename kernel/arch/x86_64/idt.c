@@ -9,6 +9,7 @@
 
 #define IDT_MAX_DESCRIPTORS 256
 
+
 typedef struct {
     uint16_t offset_lo;  // offset is for ISR address
     uint16_t ss;         // segment selector for kernel's cs
@@ -67,6 +68,8 @@ void idt_init() {
         idt_set_descriptor(vector, isr_stub_table[vector], 0x8e);
         vectors[vector] = true;
     }
+    idt_set_descriptor(0x80, isr_stub_table[0x80], 0xee);
+
     __asm__ volatile("lidt %0" : : "m"(idtr));  // load new IDT
     // pic_init();
     // apic_init();
