@@ -24,7 +24,7 @@ pageframe_t pre_frames[20];
 
 uint64_t mem_high() {
     struct limine_memmap_response* mmap = mmap_request.response;
-    unsigned int high = 0;
+    uint64_t high = 0;
     for (uint64_t i = 0; i < mmap->entry_count; ++i) {
         struct limine_memmap_entry* entry = mmap->entries[i];
 
@@ -84,11 +84,12 @@ static void mark_range(size_t start, size_t count, bool used) {
 
 void free_available_memory() {
     struct limine_memmap_response* mmap = mmap_request.response;
-    for (int i = 0; i < mmap->entry_count; i++) {
+    for (uint64_t i = 0; i < mmap->entry_count; i++) {
         struct limine_memmap_entry* entry = mmap->entries[i];
         if (entry->type == LIMINE_MEMMAP_USABLE) {
-            for (uint64_t m = entry->base; m + PAGE_SIZE < entry->base + entry->length;
-                 m += PAGE_SIZE) {
+            uint64_t start = (entry->base + PAGE_SIZE - 1) & ~(uint64_t)(PAGE_SIZE - 1);
+            uint64_t end = (entry->base + entry->length) & ~(uint64_t)(PAGE_SIZE - 1);
+            for (uint64_t m = start; m + PAGE_SIZE < end; m += PAGE_SIZE) {
                 bm_clear(m / PAGE_SIZE);
             }
         }
@@ -237,31 +238,7 @@ pageframe_t kalloc_frame_int() {
     return NULL;
 }
 
-pageframe_t kalloc_frame() {
-    static uint8_t allocate = 1;  // whether or not we are going to allocate a new set of preframes
-    static uint8_t pframe = 0;
-    pageframe_t ret;
-
-    if (pframe == 20) {
-        allocate = 1;
-    }
-
-    if (allocate == 1) {
-        for (int i = 0; i < 20; i++) {
-            pre_frames[i] = kalloc_frame_int();
-            if (pre_frames[i] == NULL) {
-                // TODO: PANIC
-                printf("out of frames");
-                return NULL;
-            }
-        }
-        pframe = 0;
-        allocate = 0;
-    }
-    ret = pre_frames[pframe];
-    pframe++;
-    return (ret);
-}
+pageframe_t kalloc_frame() { return kalloc_frames(1); }
 
 void zero_frames(uintptr_t fstart, size_t frames) { memset((void*)fstart, 0, frames * PAGE_SIZE); }
 
