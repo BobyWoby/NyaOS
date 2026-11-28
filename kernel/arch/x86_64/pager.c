@@ -6,10 +6,13 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "kernel/apic.h"
 #include "stdlib.h"
 
 // 512 entries per page
 uint64_t* pml4;
+
+uint64_t* curr_pt;  // current PT root
 
 extern char kernel_start_physical;
 extern char kernel_start_virtual;
@@ -80,7 +83,7 @@ int map_page(uintptr_t paddr, uintptr_t vaddr, uint64_t flags) {
     // last 12 bits are page offset
     bool user = (flags & PAGE_US) != 0;
 
-    uint64_t* pdpt = next_table(pml4, pml4idx, user);
+    uint64_t* pdpt = next_table(curr_pt, pml4idx, user);
     if (!pdpt) return -1;
 
     uint64_t* pd = next_table(pdpt, pdptidx, user);
@@ -96,42 +99,28 @@ int map_page(uintptr_t paddr, uintptr_t vaddr, uint64_t flags) {
     return 0;
 }
 
-void free_page(void* vaddr) {
-    uint64_t pml4idx = (uint64_t)vaddr >> 39 & 0x1ff;
-    uint64_t pdptidx = ((uint64_t)vaddr >> 30) & 0x1ff;
-    uint64_t pdidx = ((uint64_t)vaddr >> 21) & 0x1ff;
-    uint64_t ptidx = ((uint64_t)vaddr >> 12) & 0x1ff;
-
-    if (!(pml4[pml4idx] & 0x1)) {
-        return;  // nothing to do
-    }
-
-    uint64_t* pdpt = (uint64_t*)((pml4[pml4idx] & ~0xfff) + offset);
-    if (!(pdpt[pdptidx] & 0x1)) {
-        return;
-    }
-    uint64_t* pd = (uint64_t*)((pdpt[pdptidx] & ~0xfff) + offset);
-    if (!(pd[pdidx] & 0x1)) {
-        return;
-    }
-
-    uint64_t* pt = (uint64_t*)((pd[pdidx] & ~0xfff));
-    kfree_frame(pt);
-
-    bool empty = true;
-    for (int i = 0; i < 512; ++i) {
-        if (pd[i] & 0x1) {
-            empty = false;
-        }
-    }
-}
-
-// allocate num_pages of virtually contiguous pages of memory
-void* kalloc_pages(size_t num_pages) { return NULL; }
+void free_page(void* vaddr) { (void)vaddr; }
 
 uintptr_t phys_to_virt(uintptr_t paddr) { return (paddr + offset); }
 
 uintptr_t virt_to_phys(uintptr_t vaddr) { return (vaddr - offset); }
+
+/*
+ * Create a new address space and return the physical address of the pml4
+ * */
+uintptr_t addrs_create(unsigned int parent_pid, unsigned int child_pid) {
+    (void)parent_pid;
+    (void)child_pid;
+    uintptr_t root_phys = (uintptr_t)kalloc_frame();
+    if (!root_phys) return NULL;
+
+    uint64_t* root = (uint64_t*)phys_to_virt(root_phys);
+    memset(root, 0, PAGE_SIZE);
+    for (int i = 256; i < 512; ++i) {
+        root[i] = pml4[i];
+    }
+    return root_phys;
+}
 
 void paging_init() {
     __asm__ __volatile__("cli");
@@ -157,12 +146,15 @@ void paging_init() {
         if (end > top) top = end;
     }
 
+    uintptr_t lapic_phys = cpu_get_apic_base();
+    uintptr_t lapic_region = lapic_phys & ~(uintptr_t)0x1fffff;
+
     top = (top + 0x1fffff) & ~0x1fffffULL;  // round up to 2 MiB
     uintptr_t ioapic_region = ioapic_phys & ~(uintptr_t)0x1fffff;
     uint64_t flags = PAGE_RW;
     for (uint64_t p = 0; p < top; p += 0x200000) {
         flags = PAGE_RW;
-        if (p == ioapic_region) {
+        if (p == ioapic_region || p == lapic_region) {
             flags |= PAGE_PWT | PAGE_PCD;
         }
         if (map_page_2m(p, p + offset, flags) == -1) {
@@ -175,6 +167,7 @@ void paging_init() {
             abort();
         }
     }
+    curr_pt = pml4;
 
     __asm__ volatile("mov %0, %%cr3" : : "r"((uint64_t)pml4 - offset) : "memory");
 

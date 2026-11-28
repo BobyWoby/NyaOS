@@ -73,14 +73,15 @@ void apic_init() {
     remap_irqs();
     pic_disable();
     // should map the base addr page as uncacheable
-    apic_offset = cpu_get_apic_base();
+    uintptr_t lapic_phys = cpu_get_apic_base();
+    apic_offset = phys_to_virt(lapic_phys);
 
     // UC is PAT3 in Limine
-    if (map_page(apic_offset, apic_offset, 0b11000 | PAGE_RW) == -1) {
-        abort();
-    }
+    // if (map_page(apic_offset, apic_offset, 0b11000 | PAGE_RW) == -1) {
+    //     abort();
+    // }
 
-    cpu_set_apic_base(apic_offset);
+    cpu_set_apic_base(lapic_phys);
     write_reg(read_reg(0xf0) | 0x100, 0xf0);  // enable spurious interrupts
 
     __asm__ volatile("sti");  // set interrupt flag

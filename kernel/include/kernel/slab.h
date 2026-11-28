@@ -47,7 +47,7 @@ typedef struct slab{
 typedef struct cache{
     slab_ht buf2bufctl;
     kmem_slab *head, *tail, *fl_ptr;
-    char *name;
+    const char *name;
     size_t size, align; // object size
     kmem_slab hslab, tslab;
 } kmem_cache;

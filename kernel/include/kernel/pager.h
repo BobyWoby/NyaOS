@@ -14,10 +14,11 @@
 #define PAGE_ADDR_MASK 0x000FFFFFFFFFF000ULL
 
 void paging_init();
+extern uint64_t *curr_pt;
 
 [[nodiscard]] int map_page(uintptr_t paddr, uintptr_t vaddr, uint64_t flags);
 void free_page(void *vaddr);
 uintptr_t phys_to_virt(uintptr_t paddr);
 uint64_t virt_to_phys(uintptr_t vaddr);
-
+uintptr_t addrs_create(unsigned int parent_pid, unsigned int child_pid);
 #endif

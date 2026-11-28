@@ -1,11 +1,13 @@
-#include <kernel/isr.h>
 #include <drivers/keyboard.h>
 #include <drivers/serial.h>
 #include <kernel/apic.h>
 #include <kernel/io.h>
+#include <kernel/isr.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+
+#include "kernel/syscall.h"
 
 // typedef struct {
 //     uint64_t r15, r14, r13, r12, r11, r10, r9, r8;
@@ -20,19 +22,18 @@ void exception_handler(registers_t* regs) {
     // Hardware IRQs (remapped to 0x20-0x2f): dispatch quietly and return.
     if (regs->vector >= 0x20 && regs->vector <= 0x2f) {
         if (regs->vector == 0x21) handle_keyboard();
-        if(regs->vector == 0x22 || regs->vector == 0x23) handle_serial(regs->vector);
+        if (regs->vector == 0x22 || regs->vector == 0x23) handle_serial(regs->vector);
         // send_eoi(regs->vector - 0x20);
         send_eoi();
         return;
-    }
-    else if(regs->vector == 0x30){
+    } else if (regs->vector == 0x30) {
         // timer interrupt
         // printf("timer interrupt\n");
-        send_eoi(); 
+        send_eoi();
         return;
-    }else if(regs->vector == 0x80){
+    } else if (regs->vector == 0x80) {
         // syscall
-        printf("syscall!\n");
+        syscall_handler(regs->rax, regs->rdi, regs->rsi, regs->rdx, regs->r10, regs->r8, regs->r9);
         send_eoi();
         return;
     }
@@ -49,7 +50,7 @@ void exception_handler(registers_t* regs) {
         page_fault(cr2);
     }
 
-    if(regs->cs & 3){
+    if (regs->cs & 3) {
         printf("USER SPACE FAULT\n");
     }
     __asm__ volatile("cli; hlt");  // hangs

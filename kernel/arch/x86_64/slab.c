@@ -19,6 +19,18 @@ size_t hash_buf(slab_ht* ht, uintptr_t buf_addr) {
     return (size_t)hash((uint64_t)buf_addr, ht->capacity);
 }
 
+static void cache_init(kmem_cache* cache, size_t size, const char* name) {
+    memset(cache, 0, sizeof(*cache));
+    cache->size = size;
+    cache->name = name;
+    cache->head = &cache->hslab;
+    cache->tail = &cache->tslab;
+
+    cache->head->next = cache->tail;
+    cache->tail->prev = cache->head;
+    cache->fl_ptr = cache->tail;
+}
+
 // start off with one physical page for the buckets
 slab_ht ht_init() {
     slab_ht ret;
@@ -134,24 +146,7 @@ void slab_alloc_init() {
 kmem_cache* kmem_cache_create(char* name, size_t size, int align) {
     // create the cache
     kmem_cache* cache = kmem_cache_alloc(&cache_cache);
-    cache->name = name;
-    cache->size = size;
-    cache->align = align;
-
-    cache->head = &cache->hslab;
-    cache->tail = &cache->tslab;
-    cache->head->prev = NULL;
-    cache->head->next = cache->tail;
-    cache->head->freelist = NULL;
-    cache->head->refs = 0;
-
-    cache->tail->prev = cache->head;
-    cache->tail->next = NULL;
-    cache->tail->freelist = NULL;
-    cache->tail->refs = 0;
-
-    cache->fl_ptr = cache->tail;
-
+    cache_init(cache, size, name);
     cache->buf2bufctl = ht_init();
     return NULL;
 }
@@ -166,7 +161,6 @@ void _insert_slab(kmem_slab* it, kmem_slab* slab) {
 
 // append slab to the end of the cache
 void _append_slab(kmem_cache* cache, kmem_slab* slab) {
-
     _insert_slab(cache->tail, slab);
     if (cache->fl_ptr == cache->tail) {
         cache->fl_ptr = slab;
@@ -242,7 +236,7 @@ void kmem_cache_grow(kmem_cache* cache) {
             buf->back = new_slab;
         }
     }
-    
+
     // add the new_slab slab to the cache's free list
     _append_slab(cache, new_slab);
 }
@@ -338,7 +332,7 @@ void* kmem_cache_alloc(kmem_cache* cache) {
     // if this is a small object, the bufctl object is
     if (cache->size <= SMALL_OBJ_SIZE) {
         void* res = (void*)slab->freelist;
-        slab->freelist = *(kmem_bufctl **)((uintptr_t)res + cache->size);
+        slab->freelist = *(kmem_bufctl**)((uintptr_t)res + cache->size);
         *(uint64_t*)((uintptr_t)res + cache->size) = 0xDEADBEEF;
 
         if ((++(slab->refs) >= slab->buf_cnt)) {
@@ -373,17 +367,17 @@ void* kmalloc(size_t size) {
 }
 
 void kfree(void* ptr) {
-    //TODO: WIP b/c I'm too stupid to figure out how to get the cache from the ptr
-    
+    // TODO: WIP b/c I'm too stupid to figure out how to get the cache from the ptr
+
     int idx = 0;
-    kmem_bufctl *bufctl = NULL;
-    for (; idx < INITIAL_SLAB_CNT  ; ++idx) {
+    kmem_bufctl* bufctl = NULL;
+    for (; idx < INITIAL_SLAB_CNT; ++idx) {
         bufctl = ht_get(&caches[idx]->buf2bufctl, (uintptr_t)ptr);
-        if(bufctl != NULL){
+        if (bufctl != NULL) {
             break;
         }
     }
-    if(idx == INITIAL_SLAB_CNT || bufctl == NULL){
+    if (idx == INITIAL_SLAB_CNT || bufctl == NULL) {
         printf("Invalid FREE\n");
     }
     kmem_cache_free(bufctl->back->back, ptr);

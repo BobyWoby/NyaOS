@@ -233,5 +233,5 @@ void kfree_frame(pageframe_t a) { bm_clear((uint64_t)a / PAGE_SIZE); }
 
 void kfree_frames(pageframe_t a, size_t frames) {
     int idx = (uint64_t)a / PAGE_SIZE;
-    clear_range(idx, idx + frames);
+    clear_range(idx, idx + frames - 1);
 }

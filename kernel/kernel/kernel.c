@@ -4,6 +4,7 @@
 #include <kernel/apic.h>
 #include <kernel/idt.h>
 #include <kernel/ioapic.h>
+#include <kernel/process.h>
 #include <kernel/limine.h>
 #include <kernel/pager.h>
 #include <kernel/pfa.h>
@@ -55,12 +56,12 @@ void test_user_function() {
 }
 
 static const uint8_t user_code[] = {
-    0xcd, 0x80,  // interrupt 0x80 should be a syscall
-    0xeb, 0xfe   // short jump to -2 instructions from this + 1
+
+    0x48, 0xC7, 0xC0, 0x00, 0x00, 0x00, 0x00,  // mov rax,0x0
+    0xcd, 0x80,                                // interrupt 0x80 should be a syscall
+    0xeb, 0xfe                                 // loop forever
 };
 
-const uintptr_t UC_VA = 0x400000;
-const uintptr_t UC_STK_BASE = 0x700000;
 
 void setup_usercode(uintptr_t user_code_va, uintptr_t code_stack_base) {
     uintptr_t code_frame = (uintptr_t)kalloc_frame();
@@ -108,6 +109,8 @@ void kernel_main() {
     ps2_init();
     kb_enable_scanning();
     key_down_handler = key_down;
+
+    process_cache = kmem_cache_create("process_t_cache", sizeof(process_t), sizeof(process_t));
 
     setup_usercode(UC_VA, UC_STK_BASE);
     jump_usermode(UC_VA, UC_STK_BASE + PAGE_SIZE);
