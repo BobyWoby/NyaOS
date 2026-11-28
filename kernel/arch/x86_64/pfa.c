@@ -35,6 +35,53 @@ uint64_t mem_high() {
     return high;
 }
 
+static uint32_t bit_mask(unsigned int bit, unsigned int count) {
+    if (count == 32) {
+        return UINT32_MAX;
+    }
+    return ((1ul << count) - 1u) << bit;
+}
+
+bool range_is_free(size_t start, size_t count) {
+    if (start > npages || count > npages - start) return false;
+
+    while (count > 0) {
+        size_t word = start / 32;
+        unsigned int bit = start % 32;
+
+        size_t chunk = 32 - bit;
+        if (chunk > count) chunk = count;
+
+        uint32_t mask = bit_mask(bit, (unsigned int)chunk);
+
+        if (bitmap[word] & mask) return false; /* At least one frame is used. */
+
+        start += chunk;
+        count -= chunk;
+    }
+    return true;
+}
+
+static void mark_range(size_t start, size_t count, bool used) {
+    while (count > 0) {
+        size_t word = start / 32;
+        unsigned int bit = start % 32;
+
+        size_t chunk = 32 - bit;
+        if (chunk > count) chunk = count;
+
+        uint32_t mask = bit_mask(bit, (unsigned int)chunk);
+
+        if (used)
+            bitmap[word] |= mask;
+        else
+            bitmap[word] &= ~mask;
+
+        start += chunk;
+        count -= chunk;
+    }
+}
+
 void free_available_memory() {
     struct limine_memmap_response* mmap = mmap_request.response;
     for (int i = 0; i < mmap->entry_count; i++) {
@@ -82,12 +129,6 @@ void pfa_init() {
     }
 
     bm_set(0);  // mark page 0 as used
-
-    // mark everything up to end-of-bitmap as used, might not be necessary
-    // uint32_t reserved = ((addr + bitmap_size) + PAGE_SIZE - 1) / PAGE_SIZE;
-    // for (uint32_t i = 0; i < reserved; ++i) {
-    //   bm_set(i);
-    // }
 }
 
 // assumes start <= end
@@ -162,21 +203,16 @@ void set_range(size_t start, size_t end) {
 }
 
 pageframe_t kalloc_frames(size_t frames) {
-    for (unsigned int i = 0; i < (npages + 31) >> 5; ++i) {
-        if (bitmap[i] == 0xffffffff) {
+    if (frames == 0 || frames > npages) return NULL;
+
+    size_t last_start = npages - frames;
+
+    for (size_t start = 0; start < last_start; ++start) {
+        if (!range_is_free(start, frames)) {
             continue;
-        } else {
-            for (unsigned int j = 0; j < 32; ++j) {
-                // align the mask to this index
-                int end_bit = (frames - (32 - j)) % 32;
-                if (test_range(bitmap + i, bitmap + i + (frames >> 5), j, end_bit)) {
-                    uintptr_t s_idx = (i << 5) | j;
-                    uintptr_t e_idx = ((i << 5) | j) + frames;
-                    set_range(s_idx, e_idx);
-                    return (pageframe_t)(s_idx * PAGE_SIZE);
-                }
-            }
         }
+        mark_range(start, frames, true);
+        return (pageframe_t)(start * PAGE_SIZE);
     }
     return NULL;
 }
@@ -231,7 +267,19 @@ void zero_frames(uintptr_t fstart, size_t frames) { memset((void*)fstart, 0, fra
 
 void kfree_frame(pageframe_t a) { bm_clear((uint64_t)a / PAGE_SIZE); }
 
-void kfree_frames(pageframe_t a, size_t frames) {
-    int idx = (uint64_t)a / PAGE_SIZE;
-    clear_range(idx, idx + frames - 1);
+void kfree_frames(pageframe_t addr, size_t frames) {
+    uintptr_t phys = (uintptr_t)addr;
+    if (frames == 0) return;
+    if (phys % PAGE_SIZE != 0) {
+        // invalid technically
+        return;
+    }
+
+    size_t first = phys / PAGE_SIZE;
+
+    if (first >= npages || frames > npages - first) {
+        // Invalid range
+        return;
+    }
+    mark_range(first, frames, false);
 }
